@@ -6,6 +6,8 @@ Experimental native macOS application that presents an iSCSI LUN as a writable d
 
 **[Complete English guide](docs/GUIDE_EN.md)** · **[Полный гайд на русском](docs/GUIDE_RU.md)** · [Русское описание](README_RU.md) · [Architecture](docs/ARCHITECTURE.md) · [License](LICENSE)
 
+The application uses the standard iSCSI protocol and is not specific to Synology. Other NAS devices and servers with an iSCSI target are intended to work, but have not been tested: compatibility depends on target capabilities and the application’s limitations. Runtime testing has only used Synology DS220j. Synology is used below as a configuration example.
+
 ## Download and build
 
 Download the Apple Silicon application ZIP from this repository's **Releases** page, or build from source:

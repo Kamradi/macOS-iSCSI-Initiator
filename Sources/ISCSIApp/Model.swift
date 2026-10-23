@@ -61,7 +61,7 @@ import ConnectionLifecycle
                     status = "Не удалось включить подготовку ко сну. Автоподключение остановлено."
                 } else if needsAttention {
                     status = "Предыдущее отключение не было подтверждено. Сначала извлеки оставшийся диск."
-                } else { status = disk == nil ? (host.isEmpty ? "Укажи адрес NAS, Target IQN и номер LUN." : "Ожидание доступа к Synology. Домашнюю сеть можно подключить позже.") : "Диск подключён. Подготовка ко сну включена." }
+                } else { status = disk == nil ? (host.isEmpty ? "Укажи адрес NAS / сервера, Target IQN и номер LUN." : "Ожидание доступа к iSCSI-серверу. Сеть или VPN можно подключить позже.") : "Диск подключён. Подготовка ко сну включена." }
                 await persist()
             } catch { policy.unsafeDisconnect(); needsAttention = true; status = LocalizedText(error: error) }
             busy = false
@@ -117,7 +117,7 @@ import ConnectionLifecycle
         let reachable = await Task.detached { Session.isReachable(host: config.host, port: config.port) }.value
         guard reachable, networkAvailable, !policy.sleeping, generation == sleepGeneration else {
             policy.failed(now: Date()); busy = false
-            if !policy.sleeping { status = "Synology недоступен. Жду домашнюю сеть; подключение повторится автоматически." }
+            if !policy.sleeping { status = "iSCSI-сервер недоступен. Жду доступа к сети; подключение повторится автоматически." }
             return
         }
         status = "Подключение диска…"
@@ -135,7 +135,7 @@ import ConnectionLifecycle
             // A partially created attachment must be recovered before any retry.
             do { if let recovered = try await connection.recover() { disk = recovered; policy.unsafeDisconnect(); needsAttention = true } }
             catch { policy.unsafeDisconnect(); needsAttention = true }
-            status = needsAttention ? "Подключение не завершено. Требуется извлечение: \(LocalizedText(error: error))" : (manual ? LocalizedText(error: error) : "Synology пока недоступен. Повторю подключение позже.")
+            status = needsAttention ? "Подключение не завершено. Требуется извлечение: \(LocalizedText(error: error))" : (manual ? LocalizedText(error: error) : "iSCSI-сервер пока недоступен. Повторю подключение позже.")
             log("connect failed")
         }
         busy = false; await persist()
@@ -170,7 +170,7 @@ import ConnectionLifecycle
             }
         } else { policy.unsafeDisconnect(); needsAttention = true; await persist() }
         if disk != nil || busy || needsAttention { policy.unsafeDisconnect(); needsAttention = true; await persist(); status = "Сон начался до завершения извлечения. Автоподключение остановлено."; log("sleep preparation incomplete") }
-        else { status = "Диск извлечён перед сном. После пробуждения буду ждать Synology."; log("sleep prepared cleanly") }
+        else { status = "Диск извлечён перед сном. После пробуждения буду ждать iSCSI-сервер."; log("sleep prepared cleanly") }
         acknowledge()
     }
     func didWake() {
@@ -178,7 +178,7 @@ import ConnectionLifecycle
         if policy.needsAttention || disk != nil {
             policy.unsafeDisconnect(); needsAttention = true
             status = "Осталось подключение после сна. Закрой файлы и нажми «Извлечь диск»."
-        } else { status = "Ожидание доступа к Synology. Подключать домашнюю сеть сейчас необязательно." }
+        } else { status = "Ожидание доступа к iSCSI-серверу. Сеть или VPN можно подключить позже." }
         Task { await persist() }
     }
     private func tick() async {
@@ -195,7 +195,7 @@ import ConnectionLifecycle
                 case .failed:
                     if !needsAttention { log("transport lost; automatic reconnect blocked") }
                     policy.unsafeDisconnect(); needsAttention = true
-                    status = "Связь с Synology потеряна. Запись остановлена; извлеки диск перед переподключением."
+                    status = "Связь с iSCSI-сервером потеряна. Запись остановлена; извлеки диск перед переподключением."
                     await persist()
                 case .ejected:
                     _ = await disconnect(manual: true)
@@ -204,12 +204,12 @@ import ConnectionLifecycle
         } else if networkAvailable && policy.shouldConnect(now: Date(), mounted: false, busy: busy) {
             await attemptConnection(manual: false)
         } else if !networkAvailable && automatic && !needsAttention {
-            status = "Нет сети. Диск отключён; жду доступа к Synology."
+            status = "Нет сети. Диск отключён; жду доступа к iSCSI-серверу."
         }
     }
     func run(discovery: Bool) {
         guard !busy, disk == nil, !policy.sleeping, let config = configuration(), let lunNumber = UInt16(lun) else { return }
-        busy = true; details = ""; status = "Подключение к Synology…"
+        busy = true; details = ""; status = "Подключение к iSCSI-серверу…"
         let iqn = target
         Task {
             do {

@@ -4,11 +4,13 @@
 
 Подключение iSCSI LUN как диска Finder с чтением и записью. Данные находятся на NAS, полный локальный образ не создаётся. Приложение использует приватный локальный NFS-мост и встроенные дисковые образы macOS; отдельный драйвер и изменение SIP не нужны.
 
-**[Полный гайд: Synology, установка, новые LUN, exFAT, Windows, сон и диагностика](docs/GUIDE_RU.md)**
+**[Полный гайд: iSCSI, пример Synology, установка, новые LUN, exFAT, Windows, сон и диагностика](docs/GUIDE_RU.md)**
 
 [Скачать экспериментальную сборку](https://github.com/Kamradi/macOS-iSCSI-Initiator/releases) · [English](README.md) · [Архитектура](docs/ARCHITECTURE.md) · [Проверки](docs/VALIDATION.md) · [Лицензия MIT](LICENSE)
 
 [Complete English guide](docs/GUIDE_EN.md)
+
+Приложение использует стандартный протокол iSCSI и не привязано к Synology. Подключение к другим NAS и серверам с iSCSI Target предполагается, но пока не проверено: совместимость зависит от возможностей Target и ограничений приложения. Фактические проверки выполнены только с Synology DS220j. Ниже Synology приведён как пример настройки.
 
 ## Возможности
 

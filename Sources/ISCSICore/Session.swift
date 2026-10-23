@@ -248,7 +248,7 @@ public final class Session {
     public func inspect(lun: UInt16) throws -> DiskInfo {
         let inquiry = try command(lun: lun, cdb: [0x12, 0, 0, 0, 96, 0], expected: 96)
         if let type = inquiry.first, type & 0xe0 != 0 || type & 0x1f == 0x1f {
-            throw ISCSIError.message("Synology сообщает, что устройство LUN \(lun) недоступно. Проверь в SAN Manager создание, состояние и привязку LUN к этому Target.")
+            throw ISCSIError.message("iSCSI-сервер сообщает, что устройство LUN \(lun) недоступно. Проверь в панели управления сервером создание, состояние и привязку LUN к этому Target.")
         }
         guard inquiry.count >= 36, inquiry[0] & 0x1f == 0, inquiry[0] & 0xe0 == 0 else {
             let summary = inquiry.prefix(36).map { String(format: "%02x", $0) }.joined()
@@ -332,7 +332,7 @@ public final class Session {
         try transport.send(p); cmdSN &+= 1
         let r = try receive()
         guard r.opcode == 0x21, r.header.uint(16, 4) == UInt64(task), r.header[2] == 0, r.header[3] == 0 else {
-            throw ISCSIError.message("Synology не подтвердил сброс кэша на диск")
+            throw ISCSIError.message("iSCSI-сервер не подтвердил сброс кэша на диск")
         }
     }
     public func keepAlive() throws {

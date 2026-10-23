@@ -6,9 +6,9 @@ struct ContentView: View {
     @StateObject private var model = Model.shared
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
-            Text("Synology iSCSI").font(.largeTitle.bold())
+            Text("iSCSI Initiator").font(.largeTitle.bold())
             Text(model.tr("iSCSI-диск для Finder • экспериментальная версия")).foregroundStyle(.secondary)
-            Toggle(model.tr("Автоматически подключать, когда Synology доступен"), isOn: $model.automatic)
+            Toggle(model.tr("Автоматически подключать, когда сервер доступен"), isOn: $model.automatic)
                 .onChange(of: model.automatic) { _, _ in model.automaticChanged() }
                 .disabled(model.busy)
             Picker(model.tr("Язык"), selection: $model.language) {
@@ -17,7 +17,7 @@ struct ContentView: View {
                 Text("Русский").tag(AppLanguage.russian)
             }.onChange(of: model.language) { _, _ in model.languageChanged() }
             Form {
-                TextField(model.tr("Адрес NAS"), text: $model.host)
+                TextField(model.tr("Адрес NAS / сервера"), text: $model.host)
                 TextField(model.tr("Порт"), text: $model.port)
                 TextField("Target IQN", text: $model.target)
                 TextField("LUN", text: $model.lun)
@@ -65,7 +65,7 @@ struct ContentView: View {
                 ScrollView { Text(model.tr(model.details)).font(.system(.body, design: .monospaced)).textSelection(.enabled).frame(maxWidth: .infinity, alignment: .leading) }.frame(minHeight: 130)
             }
             Spacer(minLength: 0)
-            Text(model.tr("Перед сном диск извлекается автоматически. Без домашней сети приложение ждёт доступа к Synology. Не отключай сеть во время записи."))
+            Text(model.tr("Перед сном диск извлекается автоматически. Если сервер недоступен, приложение ждёт подключения. Не отключай сеть во время записи."))
                 .font(.callout).foregroundStyle(.secondary)
         }.padding(24).frame(minWidth: 700, minHeight: 540)
     }
@@ -83,7 +83,7 @@ struct ContentView: View {
     @NSApplicationDelegateAdaptor(AppDelegate.self) private var delegate
     var body: some Scene {
         WindowGroup(id: "main") { ContentView() }.windowResizability(.contentMinSize)
-        MenuBarExtra("Synology iSCSI", systemImage: "externaldrive") { StatusMenu() }
+        MenuBarExtra("iSCSI Initiator", systemImage: "externaldrive") { StatusMenu() }
     }
 }
 
@@ -93,7 +93,7 @@ struct StatusMenu: View {
     var body: some View {
         Text(model.tr(model.status))
         Divider()
-        Button(model.tr("Открыть Synology iSCSI")) { openWindow(id: "main"); NSApp.activate(ignoringOtherApps: true) }
+        Button(model.tr("Открыть iSCSI Initiator")) { openWindow(id: "main"); NSApp.activate(ignoringOtherApps: true) }
         if let volume = model.disk?.volume {
             Button(model.tr("Открыть диск в Finder")) { NSWorkspace.shared.open(URL(fileURLWithPath: volume)) }
         }

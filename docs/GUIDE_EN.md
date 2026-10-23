@@ -2,15 +2,17 @@
 
 This application, its source code and this guide were created with assistance from **OpenAI’s Codex and ChatGPT**, in collaboration with the project author.
 
-Application version: **0.4.0, experimental**. Runtime testing used Apple M4, macOS 27.0.1 and Synology DS220j. The downloadable app is for Apple Silicon. Other Macs and macOS releases require separate validation.
+Application version: **0.4.1, experimental**. Runtime testing used Apple M4, macOS 27.0.1 and Synology DS220j. The downloadable app is for Apple Silicon. Other Macs and macOS releases require separate validation.
 
 [Русский гайд](GUIDE_RU.md) · [Project overview](../README.md)
+
+The application uses the standard iSCSI protocol and is not specific to Synology. Other NAS devices and servers with an iSCSI target are intended to work, but have not been tested: compatibility depends on target capabilities and the application’s limitations. Runtime testing has only used Synology DS220j. Synology is used below as a configuration example.
 
 ## Contents
 
 1. [What you get](#1-what-you-get)
 2. [Before you begin](#2-before-you-begin)
-3. [Create a LUN on Synology](#3-create-a-lun-on-synology)
+3. [Create a target and LUN (Synology example)](#3-create-a-target-and-lun-synology-example)
 4. [Install the application](#4-install-the-application)
 5. [Language and first connection](#5-language-and-first-connection)
 6. [Format a new LUN](#6-format-a-new-lun)
@@ -31,7 +33,7 @@ Disk Utility reports **Disk Image** as the transport because the app uses the bu
 
 ## 2. Before you begin
 
-You need the NAS address, access to its iSCSI port (normally TCP 3260), the target IQN, the LUN number and, if enabled, the separate CHAP username and secret. Your DSM administrator password is not an iSCSI login password.
+You need the NAS / server address, access to its iSCSI port (normally TCP 3260), the target IQN, the LUN number and, if enabled, the separate CHAP username and secret. Your server administrator password is not an iSCSI login password.
 
 Start with a separate empty test LUN. This is experimental software, not a qualified place for the only copy of important data. The app does not prevent another computer from accessing the same LUN.
 
@@ -39,9 +41,11 @@ Start with a separate empty test LUN. This is experimental software, not a quali
 
 Use a trusted local network or an existing VPN. The app does not enable a VPN, encrypt iSCSI traffic or require you to expose the NAS port publicly. CHAP authenticates knowledge of a secret; it does not encrypt disk contents.
 
-## 3. Create a LUN on Synology
+## 3. Create a target and LUN (Synology example)
 
-In DSM 7, open **SAN Manager**:
+On another server, enable an iSCSI target, create a LUN, map it to the target and allow access from this Mac. Record the address, port, IQN, LUN number and optional CHAP settings. Management labels vary by vendor.
+
+On Synology with DSM 7, open **SAN Manager**:
 
 1. Create an empty LUN under **LUN** and choose its name, location and capacity.
 2. Create or select a target under **iSCSI**. Record its complete IQN.
@@ -58,7 +62,7 @@ If you restrict access by initiator IQN, permit the appropriate initiator. Disco
 ### Download a build
 
 1. Open the project's [Releases](https://github.com/Kamradi/macOS-iSCSI-Initiator/releases).
-2. Download `macOS-iSCSI-Initiator-0.4.0-macos-arm64.zip` and `SHA256SUMS.txt`.
+2. Download `macOS-iSCSI-Initiator-0.4.1-macos-arm64.zip` and `SHA256SUMS.txt`.
 3. Optionally compare `shasum -a 256 ARCHIVE_NAME.zip` with the published checksum. A matching hash verifies the archive bytes, not a trusted publisher signature.
 4. Extract the ZIP, move `SynologyInitiator.app` to Applications or another permanent folder, and open it.
 
@@ -88,15 +92,15 @@ App-defined connection and protocol errors are translated. Messages originating 
 
 | Field | Meaning | Example placeholder |
 | --- | --- | --- |
-| NAS address | IP address or DNS name reachable from this Mac | `nas.example.net` |
+| NAS / server address | IP address or DNS name reachable from this Mac | `nas.example.net` |
 | Port | NAS iSCSI TCP port | `3260` |
-| Target IQN | Complete target name from SAN Manager | `iqn.2026-10.example:storage.target1` |
+| Target IQN | Complete target name from the server management interface | `iqn.2026-10.example:storage.target1` |
 | LUN | Numeric address mapped to the target | `0` |
 | CHAP authentication | Enable if required by the target | disabled, or a separate username and secret |
 
 Replace the examples with your own settings.
 
-1. Enter the NAS address and port.
+1. Enter the NAS / server address and port.
 2. Click **Discover targets**, then choose the target. You can paste its IQN manually. If the NAS does not support CHAP for discovery, disable CHAP while discovering, then enable it again before connecting to the known IQN.
 3. Enter the LUN number. Target discovery does not choose the LUN number automatically.
 4. Enter CHAP credentials if required. The password stays in memory and must be entered again after restarting the app.
@@ -126,7 +130,7 @@ Real persistence tests of this app used APFS. End-to-end exFAT/Windows switching
 
 1. Close files and applications using the Mac volume.
 2. Click **Eject disk** and wait for successful completion. This disables automatic reconnect.
-3. Confirm that the Mac no longer owns an iSCSI session to this LUN; SAN Manager can help verify this.
+3. Confirm that the Mac no longer owns an iSCSI session to this LUN; use the server management interface (SAN Manager on Synology) to verify this.
 4. Only then connect Windows.
 
 There are no separate Transfer to Windows or Return to Mac buttons in this version.
@@ -134,7 +138,7 @@ There are no separate Transfer to Windows or Return to Mac buttons in this versi
 ### Connect Windows
 
 1. Open the built-in **iSCSI Initiator** (`iscsicpl.exe`). Start its service if prompted.
-2. Enter the NAS address and connect to the intended target. For CHAP, use the connection's advanced authentication settings.
+2. Enter the NAS / server address and connect to the intended target. For CHAP, use the connection's advanced authentication settings.
 3. For alternating use, avoid persistent automatic reconnection on Windows; review Favorite Targets/persistent connections.
 4. Open **Disk Management** (`diskmgmt.msc`) and identify the disk by capacity and partitions.
 5. If it already contains exFAT, do not initialize or format it again. Assign a drive letter to the existing volume if needed.
@@ -188,7 +192,7 @@ dist/iscsi luns nas.example.net iqn.2026-10.example:storage.target1
 
 | Symptom | Check |
 | --- | --- |
-| No targets found | NAS address, routing/VPN, TCP 3260, iSCSI service and discovery permissions; try the known IQN manually |
+| No targets found | NAS / server address, routing/VPN, TCP 3260, iSCSI service and discovery permissions; try the known IQN manually |
 | Login rejected | Full IQN, CHAP credentials, initiator permissions, and whether Mutual CHAP must be disabled |
 | LUN unavailable | Its numeric address, health and target mapping |
 | Device exists but no Finder volume | It may be empty or use an unsupported filesystem. Do not erase it if its data matters |

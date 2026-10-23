@@ -58,7 +58,7 @@ final class TCPTransport: Transport {
         hints.ai_socktype = SOCK_STREAM; hints.ai_protocol = IPPROTO_TCP
         var addresses: UnsafeMutablePointer<addrinfo>?
         let result = getaddrinfo(host, String(port), &hints, &addresses)
-        guard result == 0, let first = addresses else { throw ISCSIError.message("Не удалось найти адрес NAS: \(String(cString: gai_strerror(result)))") }
+        guard result == 0, let first = addresses else { throw ISCSIError.message("Не удалось найти адрес NAS / сервера: \(String(cString: gai_strerror(result)))") }
         defer { freeaddrinfo(first) }
         var entry: UnsafeMutablePointer<addrinfo>? = first
         while let current = entry {
