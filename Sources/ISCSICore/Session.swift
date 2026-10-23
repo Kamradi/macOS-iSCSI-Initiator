@@ -245,6 +245,14 @@ public final class Session {
             return UInt16(bytes[offset] & 0x3f) << 8 | UInt16(bytes[offset + 1])
         }
     }
+    /// Check target mapping before trying to expose a disk to macOS.
+    public func requireAvailableLUN(_ lun: UInt16) throws {
+        let available = try listLUNs()
+        guard available.contains(lun) else {
+            let numbers = available.map(String.init).joined(separator: ", ")
+            throw ISCSIError.message("LUN \(lun) отсутствует у выбранного Target. Доступные LUN: \(numbers). Проверь Target IQN и номер LUN.")
+        }
+    }
     public func inspect(lun: UInt16) throws -> DiskInfo {
         let inquiry = try command(lun: lun, cdb: [0x12, 0, 0, 0, 96, 0], expected: 96)
         if let type = inquiry.first, type & 0xe0 != 0 || type & 0x1f == 0x1f {

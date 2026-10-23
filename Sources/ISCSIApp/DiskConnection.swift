@@ -49,6 +49,12 @@ actor DiskConnection {
         guard let executable = Bundle.main.executableURL?.deletingLastPathComponent().appendingPathComponent("iscsi-bridge"), FileManager.default.isExecutableFile(atPath: executable.path) else {
             throw ISCSIError.message("Не найден iscsi-bridge. Запусти собранное приложение из dist.")
         }
+        let probe = try Session(configuration: configuration)
+        do {
+            try probe.login(target: target)
+            try probe.requireAvailableLUN(lun)
+            probe.close()
+        } catch { probe.close(); throw error }
         let directory = root.appendingPathComponent(UUID().uuidString, isDirectory: true)
         let mount = directory.appendingPathComponent("mount", isDirectory: true)
         try FileManager.default.createDirectory(at: mount, withIntermediateDirectories: true, attributes: [.posixPermissions: 0o700])

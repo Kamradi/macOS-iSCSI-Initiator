@@ -2,7 +2,7 @@
 
 This application, its source code and this guide were created with assistance from **OpenAI’s Codex and ChatGPT**, in collaboration with the project author.
 
-Application version: **0.4.1, experimental**. Runtime testing used Apple M4, macOS 27.0.1 and Synology DS220j. The downloadable app is for Apple Silicon. Other Macs and macOS releases require separate validation.
+Application version: **0.4.2, experimental**. Runtime testing used Apple M4, macOS 27.0.1 and Synology DS220j. The downloadable app is for Apple Silicon. Other Macs and macOS releases require separate validation.
 
 [Русский гайд](GUIDE_RU.md) · [Project overview](../README.md)
 
@@ -62,7 +62,7 @@ If you restrict access by initiator IQN, permit the appropriate initiator. Disco
 ### Download a build
 
 1. Open the project's [Releases](https://github.com/Kamradi/macOS-iSCSI-Initiator/releases).
-2. Download `macOS-iSCSI-Initiator-0.4.1-macos-arm64.zip` and `SHA256SUMS.txt`.
+2. Download `macOS-iSCSI-Initiator-0.4.2-macos-arm64.zip` and `SHA256SUMS.txt`.
 3. Optionally compare `shasum -a 256 ARCHIVE_NAME.zip` with the published checksum. A matching hash verifies the archive bytes, not a trusted publisher signature.
 4. Extract the ZIP, move `SynologyInitiator.app` to Applications or another permanent folder, and open it.
 
@@ -109,6 +109,8 @@ Replace the examples with your own settings.
 7. A recognized filesystem enables **Open in Finder**. For an empty LUN, continue below.
 
 Settings are saved locally. Closing the window leaves the app running in the menu bar.
+
+Selecting another target in the discovery list pauses automatic connection. Check the LUN number: different targets may expose different numbers. The app checks the mapping before connecting and lists available LUNs when the number is incorrect. Target selection is disabled while a disk is attached.
 
 ## 6. Format a new LUN
 

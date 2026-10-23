@@ -207,6 +207,13 @@ import ConnectionLifecycle
             status = "Нет сети. Диск отключён; жду доступа к iSCSI-серверу."
         }
     }
+    func selectTarget(_ name: String) {
+        guard !busy, disk == nil, !needsAttention, target != name else { return }
+        automatic = false; policy.manualStop()
+        target = name; details = ""
+        status = "Target выбран. Проверь номер LUN и нажми «Проверить LUN» перед подключением."
+        Task { await persist() }
+    }
     func run(discovery: Bool) {
         guard !busy, disk == nil, !policy.sleeping, let config = configuration(), let lunNumber = UInt16(lun) else { return }
         busy = true; details = ""; status = "Подключение к iSCSI-серверу…"
@@ -217,6 +224,7 @@ import ConnectionLifecycle
                     let session = try Session(configuration: config); defer { session.close() }
                     try session.login(target: discovery ? nil : iqn)
                     if discovery { return (try session.discover(), "") }
+                    try session.requireAvailableLUN(lunNumber)
                     let info = try session.inspect(lun: lunNumber)
                     return ([], "\(info.vendor) \(info.model) • \(info.byteCount) байт • блок \(info.blockSize) байт")
                 }.value

@@ -50,15 +50,18 @@ struct ContentView: View {
                 ScrollView {
                     VStack(alignment: .leading) {
                         ForEach(model.targets) { target in
-                            Button { model.target = target.name } label: {
+                            Button { model.selectTarget(target.name) } label: {
                                 VStack(alignment: .leading) {
-                                    Text(target.name).textSelection(.enabled)
+                                    HStack {
+                                        Image(systemName: model.target == target.name ? "checkmark.circle.fill" : "circle")
+                                        Text(target.name).textSelection(.enabled)
+                                    }
                                     Text(target.portals.joined(separator: ", ")).font(.caption).foregroundStyle(.secondary)
                                 }
                             }.buttonStyle(.plain).padding(6)
                         }
                     }
-                }.frame(maxHeight: 110)
+                }.frame(maxHeight: 110).disabled(model.busy || model.disk != nil || model.needsAttention)
             }
             Text(model.tr(model.status)).textSelection(.enabled)
             if !model.details.key.isEmpty {

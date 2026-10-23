@@ -1,6 +1,8 @@
 // Russian source templates are the stable keys; arguments are never translated.
 public enum EnglishCatalog {
     public static let values: [String: String] = [
+        "LUN {0} отсутствует у выбранного Target. Доступные LUN: {1}. Проверь Target IQN и номер LUN.": "LUN {0} is not mapped to the selected target. Available LUNs: {1}. Check the target IQN and LUN number.",
+        "Target выбран. Проверь номер LUN и нажми «Проверить LUN» перед подключением.": "Target selected. Check the LUN number and click Inspect LUN before connecting.",
         "Язык": "Language",
         "Системный": "System default",
         "iSCSI-диск для Finder • экспериментальная версия": "iSCSI disk for Finder • experimental version",

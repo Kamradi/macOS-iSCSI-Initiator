@@ -14,6 +14,18 @@ final class MockTransport: Transport {
 }
 
 final class ProtocolTests: XCTestCase {
+    func testTargetMappingRejectsMissingLUNBeforeDiskCommands() throws {
+        let wire = mock()
+        let session = try Session(configuration: Configuration(host: "mock"), transport: wire)
+        try session.login(target: "iqn.test")
+        try session.requireAvailableLUN(3)
+        XCTAssertThrowsError(try session.requireAvailableLUN(1)) { error in
+            let message = error.localizedDescription
+            XCTAssertTrue(message.contains("1"))
+            XCTAssertTrue(message.contains("0, 3"))
+        }
+        XCTAssertFalse(wire.sent.contains { $0.opcode == 1 && [UInt8(0x12), 0x88, 0x8a].contains($0.header[32]) })
+    }
     func testFramingAndPadding() throws {
         let bytes = try PDU(4, flags: 0x80, data: [1, 2, 3, 4, 5]).encoded()
         XCTAssertEqual(bytes.count, 56)
