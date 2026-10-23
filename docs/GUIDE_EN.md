@@ -86,8 +86,6 @@ Use the **Language / Язык** selector to choose **System default / Систе
 
 App-defined connection and protocol errors are translated. Messages originating from macOS tools and native system dialogs may follow the macOS language instead. A helper that is already running retains its initial language for its own technical log; changing the UI does not disconnect the disk. The next helper receives the selected language. CLI tools also accept `ISCSI_LANGUAGE=en` or `ISCSI_LANGUAGE=ru`.
 
-A fresh installation has empty NAS and IQN fields and does not connect until configured.
-
 | Field | Meaning | Example placeholder |
 | --- | --- | --- |
 | NAS address | IP address or DNS name reachable from this Mac | `nas.example.net` |

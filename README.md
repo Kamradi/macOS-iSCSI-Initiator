@@ -47,10 +47,6 @@ The virtual file streams I/O to the real LUN; it is not a downloaded local image
 - Local settings and bridge logs live under `~/Library/Application Support/SynologyInitiator/`. CHAP passwords are not saved in those files.
 - Startup at login is not installed. Reconnect can take about a minute on the tested setup.
 
-## Validation
-
-30 automated tests; real discovery, LUN capacity/read/write/flush, APFS formatting and mounting, file checksum after a full reconnect, and one real sleep/wake cycle. No sustained-load or full fault-injection qualification has been performed. See [validation notes](docs/VALIDATION.md).
-
 ## Contributing
 
 Read [CONTRIBUTING.md](CONTRIBUTING.md). Do not include NAS credentials, real target IQNs, file contents or private network logs in issues. Use a disposable LUN for write tests.
