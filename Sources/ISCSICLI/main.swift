@@ -1,10 +1,11 @@
+import AppLocalization
 import Foundation
 import ISCSICore
 import CryptoKit
 
 let args = Array(CommandLine.arguments.dropFirst())
 guard args.count >= 2 else {
-    print("Использование: iscsi discover HOST [PORT] | iscsi luns HOST TARGET | iscsi inspect HOST TARGET [LUN] [PORT] | iscsi readcheck HOST TARGET LUN\nCHAP: ISCSI_USERNAME и ISCSI_PASSWORD в окружении. Только чтение.")
+    print(LocalizedText("Использование: iscsi discover HOST [PORT] | iscsi luns HOST TARGET | iscsi inspect HOST TARGET [LUN] [PORT] | iscsi readcheck HOST TARGET LUN\nCHAP: ISCSI_USERNAME и ISCSI_PASSWORD в окружении. Только чтение.").render())
     exit(2)
 }
 do {
@@ -22,7 +23,7 @@ do {
         for target in try session.discover() { print("\(target.name)\n  \(target.portals.joined(separator: ", "))") }
     } else if action == "luns" {
         try session.login(target: args[2])
-        print("Доступные LUN: \(try session.listLUNs().map(String.init).joined(separator: ", "))")
+        print(LocalizedText("Доступные LUN: \(try session.listLUNs().map(String.init).joined(separator: ", "))").render())
     } else {
         guard let lun = UInt16(args.count > 3 ? args[3] : "0") else { throw ISCSIError.message("Некорректный LUN") }
         try session.login(target: args[2])
@@ -38,7 +39,7 @@ do {
             try session.write(lun: lun, lba: lba, data: original, info: info)
             try session.synchronize(lun: lun)
             guard check == pattern else { throw ISCSIError.message("Запись не совпала при чтении") }
-            print("Запись, flush и чтение 4096 байт совпали. Исходные блоки восстановлены.")
+            print(LocalizedText("Запись, flush и чтение 4096 байт совпали. Исходные блоки восстановлены.").render())
             exit(0)
         }
         if action == "readcheck" {
@@ -48,11 +49,11 @@ do {
             let repeatStart = try session.read(lun: lun, lba: 0, blocks: blocks, info: info)
             guard start == repeatStart else { throw ISCSIError.message("Данные при повторном чтении изменились") }
             let digest = SHA256.hash(data: start).map { String(format: "%02x", $0) }.joined()
-            print("Чтение начала LUN: \(start.count) байт; повтор совпал.\nЧтение последнего блока: \(end.count) байт.\nSHA-256 начала: \(digest)\nЗапись не выполнялась.")
+            print(LocalizedText("Чтение начала LUN: \(start.count) байт; повтор совпал.\nЧтение последнего блока: \(end.count) байт.\nSHA-256 начала: \(digest)\nЗапись не выполнялась.").render())
             exit(0)
         }
         let first = try session.read(lun: lun, lba: 0, blocks: 1, info: info)
-        print("\(info.vendor) \(info.model)\nLUN \(lun): \(info.byteCount) байт, \(info.blockCount) блоков × \(info.blockSize)\nПервый блок прочитан: \(first.count) байт. Запись не выполнялась.")
+        print(LocalizedText("\(info.vendor) \(info.model)\nLUN \(lun): \(info.byteCount) байт, \(info.blockCount) блоков × \(info.blockSize)\nПервый блок прочитан: \(first.count) байт. Запись не выполнялась.").render())
     }
 } catch {
     FileHandle.standardError.write(Data((error.localizedDescription + "\n").utf8))

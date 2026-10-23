@@ -1,8 +1,10 @@
 # macOS iSCSI Initiator
 
+This application, its source code and its documentation were created with assistance from **OpenAI’s Codex and ChatGPT**, in collaboration with the project author.
+
 Experimental native macOS application that presents an iSCSI LUN as a writable disk in Finder. Tested on Apple M4, macOS 27.0.1, and Synology DS220j.
 
-**[Полный гайд на русском](docs/GUIDE_RU.md)** · [Русское описание](README_RU.md) · [Architecture](docs/ARCHITECTURE.md) · [License](LICENSE)
+**[Complete English guide](docs/GUIDE_EN.md)** · **[Полный гайд на русском](docs/GUIDE_RU.md)** · [Русское описание](README_RU.md) · [Architecture](docs/ARCHITECTURE.md) · [License](LICENSE)
 
 ## Download and build
 
@@ -11,6 +13,7 @@ Download the Apple Silicon application ZIP from this repository's **Releases** p
 ```sh
 zsh build-app.sh
 swift test
+python3 scripts/check-localization.py
 ```
 
 The application is `dist/SynologyInitiator.app`. The diagnostic tool is `dist/iscsi`.
@@ -25,7 +28,7 @@ The prebuilt app is **arm64 only** and **ad-hoc signed, not notarized**. macOS m
 4. Keep the app running. It attempts a clean detach before sleep, waits quietly when the NAS is unavailable, and reconnects when access returns.
 5. **Извлечь диск** (Eject) disables auto-reconnect until you explicitly enable it again.
 
-Only one saved connection and one mounted LUN are supported. The application does not contain a Windows initiator; Windows uses its built-in iSCSI Initiator. GUI labels are currently Russian.
+Only one saved connection and one mounted LUN are supported. The application does not contain a Windows initiator; Windows uses its built-in iSCSI Initiator. The GUI supports English and Russian. Choose System default, English or Русский in the Language selector; the choice is saved and applied immediately. Native macOS dialogs and external tool errors may follow the system language.
 
 ## How it works
 
@@ -46,7 +49,7 @@ The virtual file streams I/O to the real LUN; it is not a downloaded local image
 
 ## Validation
 
-23 automated tests; real discovery, LUN capacity/read/write/flush, APFS formatting and mounting, file checksum after a full reconnect, and one real sleep/wake cycle. No sustained-load or full fault-injection qualification has been performed. See [validation notes](docs/VALIDATION.md).
+30 automated tests; real discovery, LUN capacity/read/write/flush, APFS formatting and mounting, file checksum after a full reconnect, and one real sleep/wake cycle. No sustained-load or full fault-injection qualification has been performed. See [validation notes](docs/VALIDATION.md).
 
 ## Contributing
 

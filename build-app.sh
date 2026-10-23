@@ -14,14 +14,23 @@ cat > "$APP/Contents/Info.plist" <<'PLIST'
 <key>CFBundleExecutable</key><string>SynologyInitiator</string>
 <key>CFBundleIdentifier</key><string>local.synologyinitiator.app</string>
 <key>CFBundleName</key><string>Synology iSCSI</string>
+<key>CFBundleDevelopmentRegion</key><string>en</string>
+<key>CFBundleLocalizations</key><array><string>en</string><string>ru</string></array>
 <key>CFBundlePackageType</key><string>APPL</string>
-<key>CFBundleShortVersionString</key><string>0.3.2</string>
-<key>CFBundleVersion</key><string>5</string>
+<key>CFBundleShortVersionString</key><string>0.4.0</string>
+<key>CFBundleVersion</key><string>6</string>
 <key>LSMinimumSystemVersion</key><string>14.0</string>
 <key>NSHighResolutionCapable</key><true/>
-<key>NSLocalNetworkUsageDescription</key><string>Подключение к iSCSI Target на вашем Synology NAS.</string>
+<key>NSLocalNetworkUsageDescription</key><string>Connect to an iSCSI target on your NAS.</string>
 </dict></plist>
 PLIST
+mkdir -p "$APP/Contents/Resources/en.lproj" "$APP/Contents/Resources/ru.lproj"
+cat > "$APP/Contents/Resources/en.lproj/InfoPlist.strings" <<'STRINGS'
+"NSLocalNetworkUsageDescription" = "Connect to an iSCSI target on your NAS.";
+STRINGS
+cat > "$APP/Contents/Resources/ru.lproj/InfoPlist.strings" <<'STRINGS'
+"NSLocalNetworkUsageDescription" = "Подключение к iSCSI Target на вашем NAS.";
+STRINGS
 codesign --force --sign - "$APP/Contents/MacOS/iscsi-bridge"
 codesign --force --sign - "$APP"
 codesign --verify --deep --strict "$APP"

@@ -1,3 +1,4 @@
+import AppLocalization
 import SwiftUI
 import Network
 import ISCSICore
@@ -14,11 +15,14 @@ import ConnectionLifecycle
     @Published var chap = false
     @Published var busy = true
     @Published var targets: [Target] = []
-    @Published var status = "Проверка предыдущего подключения…"
-    @Published var details = ""
+    @Published var status: LocalizedText = "Проверка предыдущего подключения…"
+    @Published var details: LocalizedText = ""
     @Published var disk: MountedDisk?
     @Published var automatic = false
     @Published var needsAttention = false
+    @Published var language = AppLanguage.saved
+    func tr(_ text: LocalizedText) -> String { text.render(language) }
+    func languageChanged() { language.save() }
     private let connection = DiskConnection()
     private var policy = ReconnectPolicy()
     private var power: PowerMonitor?
@@ -59,7 +63,7 @@ import ConnectionLifecycle
                     status = "Предыдущее отключение не было подтверждено. Сначала извлеки оставшийся диск."
                 } else { status = disk == nil ? (host.isEmpty ? "Укажи адрес NAS, Target IQN и номер LUN." : "Ожидание доступа к Synology. Домашнюю сеть можно подключить позже.") : "Диск подключён. Подготовка ко сну включена." }
                 await persist()
-            } catch { policy.unsafeDisconnect(); needsAttention = true; status = error.localizedDescription }
+            } catch { policy.unsafeDisconnect(); needsAttention = true; status = LocalizedText(error: error) }
             busy = false
             log("started; power notifications registered=\(power?.isRegistered == true)")
             timer = Timer.scheduledTimer(withTimeInterval: 10, repeats: true) { _ in Task { @MainActor in await Model.shared.tick() } }
@@ -101,7 +105,7 @@ import ConnectionLifecycle
             disk = try await connection.recover()
             busy = false
             _ = await disconnect(manual: true)
-        } catch { busy = false; status = error.localizedDescription }
+        } catch { busy = false; status = LocalizedText(error: error) }
     }
     private func attemptConnection(manual: Bool) async {
         guard !busy, disk == nil, !policy.sleeping, !policy.needsAttention,
@@ -131,7 +135,7 @@ import ConnectionLifecycle
             // A partially created attachment must be recovered before any retry.
             do { if let recovered = try await connection.recover() { disk = recovered; policy.unsafeDisconnect(); needsAttention = true } }
             catch { policy.unsafeDisconnect(); needsAttention = true }
-            status = needsAttention ? "Подключение не завершено. Требуется извлечение: \(error.localizedDescription)" : (manual ? error.localizedDescription : "Synology пока недоступен. Повторю подключение позже.")
+            status = needsAttention ? "Подключение не завершено. Требуется извлечение: \(LocalizedText(error: error))" : (manual ? LocalizedText(error: error) : "Synology пока недоступен. Повторю подключение позже.")
             log("connect failed")
         }
         busy = false; await persist()
@@ -148,7 +152,7 @@ import ConnectionLifecycle
             await persist(); return true
         } catch {
             policy.unsafeDisconnect(); needsAttention = true; busy = false
-            status = "Диск не удалось безопасно извлечь. Закрой файлы на нём и повтори: \(error.localizedDescription)"
+            status = "Диск не удалось безопасно извлечь. Закрой файлы на нём и повтори: \(LocalizedText(error: error))"
             log("detach failed; automatic reconnect blocked")
             await persist(); return false
         }
@@ -209,7 +213,7 @@ import ConnectionLifecycle
         let iqn = target
         Task {
             do {
-                let result = try await Task.detached { () -> ([Target], String) in
+                let result = try await Task.detached { () -> ([Target], LocalizedText) in
                     let session = try Session(configuration: config); defer { session.close() }
                     try session.login(target: discovery ? nil : iqn)
                     if discovery { return (try session.discover(), "") }
@@ -218,7 +222,7 @@ import ConnectionLifecycle
                 }.value
                 if discovery { targets = result.0; status = "Найдено Target: \(targets.count)." }
                 else { details = result.1; status = "LUN доступен." }
-            } catch { status = error.localizedDescription }
+            } catch { status = LocalizedText(error: error) }
             busy = false
         }
     }

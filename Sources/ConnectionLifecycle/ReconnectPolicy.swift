@@ -1,3 +1,4 @@
+import AppLocalization
 import Foundation
 
 /// Reconnect only after a clean detach. A transport fault never authorizes

@@ -1,3 +1,4 @@
+import AppLocalization
 import Foundation
 import ISCSICore
 import Darwin
@@ -59,7 +60,7 @@ actor DiskConnection {
         process.arguments = [configuration.host, target, String(lun), state.path, "--read-write"]
         var env = ProcessInfo.processInfo.environment
         env["ISCSI_USERNAME"] = configuration.username; env["ISCSI_PASSWORD"] = configuration.password
-        env["ISCSI_PORT"] = String(configuration.port); env["ISCSI_TRACE"] = nil
+        env["ISCSI_PORT"] = String(configuration.port); env["ISCSI_TRACE"] = nil; env["ISCSI_LANGUAGE"] = AppLanguage.current.rawValue
         process.environment = env; process.standardOutput = logHandle; process.standardError = logHandle
         try process.run(); helper = process
         var mounted = false
@@ -71,7 +72,7 @@ actor DiskConnection {
             }
             guard process.isRunning, let ready = try? JSONSerialization.jsonObject(with: Data(contentsOf: state)) as? [String: Any],
                   let port = ready["port"] as? Int, let export = ready["export"] as? String, let size = ready["size"] as? UInt64 else {
-                throw ISCSIError.message((try? String(contentsOf: log, encoding: .utf8)) ?? "Мост не запустился")
+                throw ISCSIError.message((try? String(contentsOf: log, encoding: .utf8)).map(LocalizedText.literal) ?? "Мост не запустился")
             }
             _ = try run("/sbin/mount_nfs", ["-o", "vers=3,tcp,port=\(port),mountport=\(port),noresvport,nolocks,soft,timeo=20,retrans=2,noac,nobrowse,rsize=65536,wsize=65536", "127.0.0.1:" + export, mount.path])
             mounted = true

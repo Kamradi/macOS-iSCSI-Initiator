@@ -15,5 +15,7 @@ jobs:
         run: swift --version
       - name: Test without NAS
         run: swift test
+      - name: Verify English translation coverage
+        run: python3 scripts/check-localization.py
       - name: Build app
         run: zsh build-app.sh

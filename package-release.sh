@@ -13,12 +13,13 @@ mkdir -p "$releaseStage/docs"
 ditto dist/public/SynologyInitiator.app "$releaseStage/SynologyInitiator.app"
 cp dist/iscsi "$releaseStage/iscsi"
 cp LICENSE README.md README_RU.md "$releaseStage/"
-cp docs/GUIDE_RU.md docs/ARCHITECTURE.md docs/VALIDATION.md "$releaseStage/docs/"
+cp docs/GUIDE_RU.md docs/GUIDE_EN.md docs/ARCHITECTURE.md docs/VALIDATION.md "$releaseStage/docs/"
 ditto -c -k --sequesterRsrc --keepParent "$releaseStage" "dist/${releaseName}.zip"
 git archive --format=zip --prefix="macOS-iSCSI-Initiator-${releaseVersion}-source/" --output="dist/macOS-iSCSI-Initiator-${releaseVersion}-source.zip" HEAD
 cp docs/GUIDE_RU.md dist/GUIDE_RU.md
+cp docs/GUIDE_EN.md dist/GUIDE_EN.md
 (
   cd dist
-  shasum -a 256 "${releaseName}.zip" "macOS-iSCSI-Initiator-${releaseVersion}-source.zip" GUIDE_RU.md > SHA256SUMS.txt
+  shasum -a 256 "${releaseName}.zip" "macOS-iSCSI-Initiator-${releaseVersion}-source.zip" GUIDE_RU.md GUIDE_EN.md > SHA256SUMS.txt
 )
 echo "Release archives and SHA256SUMS.txt are in dist/."

@@ -1,3 +1,4 @@
+import AppLocalization
 import SwiftUI
 import ISCSICore
 
@@ -6,38 +7,43 @@ struct ContentView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
             Text("Synology iSCSI").font(.largeTitle.bold())
-            Text("iSCSI-диск для Finder • экспериментальная версия").foregroundStyle(.secondary)
-            Toggle("Автоматически подключать, когда Synology доступен", isOn: $model.automatic)
+            Text(model.tr("iSCSI-диск для Finder • экспериментальная версия")).foregroundStyle(.secondary)
+            Toggle(model.tr("Автоматически подключать, когда Synology доступен"), isOn: $model.automatic)
                 .onChange(of: model.automatic) { _, _ in model.automaticChanged() }
                 .disabled(model.busy)
+            Picker(model.tr("Язык"), selection: $model.language) {
+                Text(model.tr("Системный")).tag(AppLanguage.system)
+                Text("English").tag(AppLanguage.english)
+                Text("Русский").tag(AppLanguage.russian)
+            }.onChange(of: model.language) { _, _ in model.languageChanged() }
             Form {
-                TextField("Адрес NAS", text: $model.host)
-                TextField("Порт", text: $model.port)
+                TextField(model.tr("Адрес NAS"), text: $model.host)
+                TextField(model.tr("Порт"), text: $model.port)
                 TextField("Target IQN", text: $model.target)
                 TextField("LUN", text: $model.lun)
-                Toggle("Авторизация CHAP", isOn: $model.chap)
+                Toggle(model.tr("Авторизация CHAP"), isOn: $model.chap)
                 if model.chap {
-                    TextField("Имя CHAP", text: $model.username)
-                    SecureField("Пароль CHAP", text: $model.password)
-                    Text("Пароль используется в памяти и не сохраняется.").font(.caption).foregroundStyle(.secondary)
+                    TextField(model.tr("Имя CHAP"), text: $model.username)
+                    SecureField(model.tr("Пароль CHAP"), text: $model.password)
+                    Text(model.tr("Пароль используется в памяти и не сохраняется.")).font(.caption).foregroundStyle(.secondary)
                 }
             }.disabled(model.busy || model.disk != nil)
             HStack {
-                Button("Найти Target") { model.run(discovery: true) }
-                Button("Проверить LUN") { model.run(discovery: false) }.buttonStyle(.borderedProminent)
+                Button(model.tr("Найти Target")) { model.run(discovery: true) }
+                Button(model.tr("Проверить LUN")) { model.run(discovery: false) }.buttonStyle(.borderedProminent)
                 if model.busy { ProgressView().controlSize(.small) }
             }.disabled(model.busy || model.disk != nil)
             HStack {
                 if let disk = model.disk {
-                    Button("Извлечь диск") { Task { _ = await model.disconnect() } }
+                    Button(model.tr("Извлечь диск")) { Task { _ = await model.disconnect() } }
                     if let volume = disk.volume {
-                        Button("Открыть в Finder") { NSWorkspace.shared.open(URL(fileURLWithPath: volume)) }.buttonStyle(.borderedProminent)
+                        Button(model.tr("Открыть в Finder")) { NSWorkspace.shared.open(URL(fileURLWithPath: volume)) }.buttonStyle(.borderedProminent)
                     }
                     Text(disk.device).font(.caption).foregroundStyle(.secondary)
                 } else if model.needsAttention {
-                    Button("Проверить прежнее подключение") { Task { await model.inspectPreviousConnection() } }
+                    Button(model.tr("Проверить прежнее подключение")) { Task { await model.inspectPreviousConnection() } }
                 } else {
-                    Button("Подключить диск") { model.connect() }.buttonStyle(.borderedProminent)
+                    Button(model.tr("Подключить диск")) { model.connect() }.buttonStyle(.borderedProminent)
                 }
             }.disabled(model.busy)
             if !model.targets.isEmpty {
@@ -54,12 +60,12 @@ struct ContentView: View {
                     }
                 }.frame(maxHeight: 110)
             }
-            Text(model.status).textSelection(.enabled)
-            if !model.details.isEmpty {
-                ScrollView { Text(model.details).font(.system(.body, design: .monospaced)).textSelection(.enabled).frame(maxWidth: .infinity, alignment: .leading) }.frame(minHeight: 130)
+            Text(model.tr(model.status)).textSelection(.enabled)
+            if !model.details.key.isEmpty {
+                ScrollView { Text(model.tr(model.details)).font(.system(.body, design: .monospaced)).textSelection(.enabled).frame(maxWidth: .infinity, alignment: .leading) }.frame(minHeight: 130)
             }
             Spacer(minLength: 0)
-            Text("Перед сном диск извлекается автоматически. Без домашней сети приложение ждёт доступа к Synology. Не отключай сеть во время записи.")
+            Text(model.tr("Перед сном диск извлекается автоматически. Без домашней сети приложение ждёт доступа к Synology. Не отключай сеть во время записи."))
                 .font(.callout).foregroundStyle(.secondary)
         }.padding(24).frame(minWidth: 700, minHeight: 540)
     }
@@ -85,20 +91,20 @@ struct StatusMenu: View {
     @ObservedObject private var model = Model.shared
     @Environment(\.openWindow) private var openWindow
     var body: some View {
-        Text(model.status)
+        Text(model.tr(model.status))
         Divider()
-        Button("Открыть Synology iSCSI") { openWindow(id: "main"); NSApp.activate(ignoringOtherApps: true) }
+        Button(model.tr("Открыть Synology iSCSI")) { openWindow(id: "main"); NSApp.activate(ignoringOtherApps: true) }
         if let volume = model.disk?.volume {
-            Button("Открыть диск в Finder") { NSWorkspace.shared.open(URL(fileURLWithPath: volume)) }
+            Button(model.tr("Открыть диск в Finder")) { NSWorkspace.shared.open(URL(fileURLWithPath: volume)) }
         }
         if model.disk != nil {
-            Button("Извлечь диск") { Task { _ = await model.disconnect() } }.disabled(model.busy)
+            Button(model.tr("Извлечь диск")) { Task { _ = await model.disconnect() } }.disabled(model.busy)
         } else if model.needsAttention {
-            Button("Проверить прежнее подключение") { Task { await model.inspectPreviousConnection() } }.disabled(model.busy)
+            Button(model.tr("Проверить прежнее подключение")) { Task { await model.inspectPreviousConnection() } }.disabled(model.busy)
         } else {
-            Button("Подключить диск") { model.connect() }.disabled(model.busy)
+            Button(model.tr("Подключить диск")) { model.connect() }.disabled(model.busy)
         }
         Divider()
-        Button("Завершить работу") { NSApp.terminate(nil) }.disabled(model.busy)
+        Button(model.tr("Завершить работу")) { NSApp.terminate(nil) }.disabled(model.busy)
     }
 }

@@ -1,11 +1,13 @@
+import AppLocalization
 import Foundation
 import Darwin
 
-public enum CommandError: Error, LocalizedError {
+public enum CommandError: Error, LocalizedError, LocalizableError {
     case failed(String), timedOut(String)
-    public var errorDescription: String? {
+    public var errorDescription: String? { localizedText.render() }
+    public var localizedText: LocalizedText {
         switch self {
-        case .failed(let message): return message
+        case .failed(let message): return .literal(message)
         case .timedOut(let name): return "Операция \(name) не завершилась вовремя. Принудительное извлечение не выполнялось."
         }
     }

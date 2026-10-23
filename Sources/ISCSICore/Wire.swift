@@ -1,9 +1,11 @@
+import AppLocalization
 import Foundation
 import Darwin
 
-public enum ISCSIError: Error, LocalizedError {
-    case message(String)
-    public var errorDescription: String? { if case .message(let text) = self { return text }; return nil }
+public enum ISCSIError: Error, LocalizedError, LocalizableError {
+    case message(LocalizedText)
+    public var localizedText: LocalizedText { switch self { case .message(let text): return text } }
+    public var errorDescription: String? { localizedText.render() }
 }
 
 extension Array where Element == UInt8 {
