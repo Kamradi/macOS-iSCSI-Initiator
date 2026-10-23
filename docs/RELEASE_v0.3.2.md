@@ -1,13 +1,17 @@
-# macOS iSCSI Initiator 0.3.1 — experimental / экспериментальная версия
+# macOS iSCSI Initiator 0.3.2 — experimental / экспериментальная версия
 
 ## Скачать и начать
 
-- **macOS-iSCSI-Initiator-0.3.1-macos-arm64.zip** — приложение для Apple Silicon, консольная диагностика, лицензия и гайды.
+- **macOS-iSCSI-Initiator-0.3.2-macos-arm64.zip** — приложение для Apple Silicon, консольная диагностика, лицензия и гайды.
 - **GUIDE_RU.md** — полный русский гайд: Synology, новые LUN, форматирование, Windows/exFAT, сон, работа без домашней сети и решение проблем.
-- **macOS-iSCSI-Initiator-0.3.1-source.zip** — исходники этого выпуска.
+- **macOS-iSCSI-Initiator-0.3.2-source.zip** — исходники этого выпуска.
 - **SHA256SUMS.txt** — контрольные суммы файлов.
 
 Распакуйте ZIP и запустите SynologyInitiator.app. Укажите свои адрес NAS, Target IQN и номер LUN. Настройки реального NAS в публичной сборке отсутствуют. Подробности — в [полном гайде](https://github.com/Kamradi/macOS-iSCSI-Initiator/blob/main/docs/GUIDE_RU.md).
+
+## Исправление 0.3.2
+
+Исправлена сборка GUI обычным Swift Package Manager на чистой машине: файл с `@main` переименован, чтобы не конфликтовать с особой обработкой имени `main.swift`. Сетевая логика не менялась.
 
 ## Возможности
 
