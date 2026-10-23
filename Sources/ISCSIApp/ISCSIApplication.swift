@@ -64,6 +64,12 @@ struct ContentView: View {
                 }.frame(maxHeight: 110).disabled(model.busy || model.disk != nil || model.needsAttention)
             }
             Text(model.tr(model.status)).textSelection(.enabled)
+            if let started = model.connectionStarted {
+                TimelineView(.periodic(from: .now, by: 1)) { context in
+                    Text(model.tr("Прошло секунд: \(max(0, Int(context.date.timeIntervalSince(started))))"))
+                        .font(.caption).foregroundStyle(.secondary)
+                }
+            }
             if !model.details.key.isEmpty {
                 ScrollView { Text(model.tr(model.details)).font(.system(.body, design: .monospaced)).textSelection(.enabled).frame(maxWidth: .infinity, alignment: .leading) }.frame(minHeight: 130)
             }

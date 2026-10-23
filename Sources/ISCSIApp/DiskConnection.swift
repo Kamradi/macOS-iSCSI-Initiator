@@ -23,7 +23,20 @@ actor DiskConnection {
     }
     private var record: URL { root.appendingPathComponent("active.json") }
     private func run(_ executable: String, _ args: [String], timeout: TimeInterval = 90) throws -> Data {
-        try CommandRunner.run(executable, args, timeout: timeout)
+        let start = ProcessInfo.processInfo.systemUptime
+        let name = URL(fileURLWithPath: executable).lastPathComponent
+        let measured = args.first != "info"
+        if measured { trace("start " + name) }
+        defer { if measured { trace("finish " + name + " elapsed=" + String(format: "%.2f", ProcessInfo.processInfo.systemUptime - start)) } }
+        return try CommandRunner.run(executable, args, timeout: timeout)
+    }
+    private func trace(_ message: String) {
+        let url = root.appendingPathComponent("connection.log")
+        if !FileManager.default.fileExists(atPath: url.path) { FileManager.default.createFile(atPath: url.path, contents: nil, attributes: [.posixPermissions: 0o600]) }
+        guard let handle = try? FileHandle(forWritingTo: url) else { return }
+        defer { try? handle.close() }
+        _ = try? handle.seekToEnd()
+        try? handle.write(contentsOf: Data((ISO8601DateFormatter().string(from: Date()) + " " + message + "\n").utf8))
     }
     private func images(timeout: TimeInterval = 10) throws -> [[String: Any]] {
         let data = try run("/usr/bin/hdiutil", ["info", "-plist"], timeout: timeout)
@@ -44,17 +57,21 @@ actor DiskConnection {
         current = saved
         return saved
     }
-    func connect(configuration: Configuration, target: String, lun: UInt16) throws -> MountedDisk {
+    func connect(configuration: Configuration, target: String, lun: UInt16, progress: @Sendable (LocalizedText) -> Void) throws -> MountedDisk {
         guard current == nil, !FileManager.default.fileExists(atPath: record.path) else { throw ISCSIError.message("Предыдущее подключение ещё не извлечено") }
         guard let executable = Bundle.main.executableURL?.deletingLastPathComponent().appendingPathComponent("iscsi-bridge"), FileManager.default.isExecutableFile(atPath: executable.path) else {
             throw ISCSIError.message("Не найден iscsi-bridge. Запусти собранное приложение из dist.")
         }
+        progress("Проверка Target и LUN…")
+        trace("target check start")
         let probe = try Session(configuration: configuration)
         do {
             try probe.login(target: target)
             try probe.requireAvailableLUN(lun)
             probe.close()
         } catch { probe.close(); throw error }
+        trace("target check complete")
+        progress("Запуск локального моста…")
         let directory = root.appendingPathComponent(UUID().uuidString, isDirectory: true)
         let mount = directory.appendingPathComponent("mount", isDirectory: true)
         try FileManager.default.createDirectory(at: mount, withIntermediateDirectories: true, attributes: [.posixPermissions: 0o700])
@@ -80,12 +97,14 @@ actor DiskConnection {
                   let port = ready["port"] as? Int, let export = ready["export"] as? String, let size = ready["size"] as? UInt64 else {
                 throw ISCSIError.message((try? String(contentsOf: log, encoding: .utf8)).map(LocalizedText.literal) ?? "Мост не запустился")
             }
-            _ = try run("/sbin/mount_nfs", ["-o", "vers=3,tcp,port=\(port),mountport=\(port),noresvport,nolocks,soft,timeo=20,retrans=2,noac,nobrowse,rsize=65536,wsize=65536", "127.0.0.1:" + export, mount.path])
+            progress("Подключение локального моста…")
+            _ = try run("/sbin/mount_nfs", ["-o", "vers=3,tcp,port=\(port),mountport=\(port),noresvport,nolocks,soft,timeo=20,retrans=2,noac,nobrowse,readahead=0,rsize=65536,wsize=65536", "127.0.0.1:" + export, mount.path])
             mounted = true
             let pending = MountedDisk(device: "", volume: nil, mountDirectory: mount.path, runtimeDirectory: directory.path, helperPID: process.processIdentifier, byteCount: size)
             current = pending
             try JSONEncoder().encode(pending).write(to: record, options: .atomic)
             try FileManager.default.setAttributes([.posixPermissions: 0o600], ofItemAtPath: record.path)
+            progress("macOS подключает диск и проверяет том…")
             let result = try run("/usr/bin/hdiutil", ["attach", "-imagekey", "diskimage-class=CRawDiskImage", "-plist", mount.appendingPathComponent("lun.raw").path])
             attached = true
             guard let plist = try PropertyListSerialization.propertyList(from: result, format: nil) as? [String: Any],
@@ -93,12 +112,12 @@ actor DiskConnection {
                   let entry = entities.first?["dev-entry"] as? String, entry.hasPrefix("/dev/disk") else {
                 throw ISCSIError.message("macOS не вернула устройство подключённого диска")
             }
-            let infoData = try run("/usr/sbin/diskutil", ["info", "-plist", entry])
-            let info = try PropertyListSerialization.propertyList(from: infoData, format: nil) as? [String: Any]
-            guard let whole = info?["ParentWholeDisk"] as? String ?? info?["DeviceIdentifier"] as? String,
-                  whole.range(of: "^disk[0-9]+$", options: .regularExpression) != nil else { throw ISCSIError.message("Не определён физический виртуальный диск") }
-            let device = "/dev/" + whole
-            let volume = entities.compactMap { $0["mount-point"] as? String }.first
+            let attachedImage = try images().first { $0["image-path"] as? String == mount.appendingPathComponent("lun.raw").path }
+            let attachedEntities = attachedImage?["system-entities"] as? [[String: Any]] ?? entities
+            guard let device = DiskImageLayout.wholeDevice(in: attachedEntities) else {
+                throw ISCSIError.message("Не определён физический виртуальный диск")
+            }
+            let volume = attachedEntities.compactMap { $0["mount-point"] as? String }.first
             let disk = MountedDisk(device: device, volume: volume, mountDirectory: mount.path, runtimeDirectory: directory.path, helperPID: process.processIdentifier, byteCount: size)
             current = disk
             try JSONEncoder().encode(disk).write(to: record, options: .atomic)

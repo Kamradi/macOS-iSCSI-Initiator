@@ -13,6 +13,7 @@ import ConnectionLifecycle
     @Published var username = ""
     @Published var password = ""
     @Published var chap = false
+    @Published var connectionStarted: Date?
     @Published var busy = true
     @Published var targets: [Target] = []
     @Published var status: LocalizedText = "Проверка предыдущего подключения…"
@@ -112,6 +113,8 @@ import ConnectionLifecycle
               let config = configuration(), let lunNumber = UInt16(lun), lunNumber <= 16383, !target.isEmpty else { return }
         if chap && password.isEmpty { status = "Введи пароль CHAP для подключения. Пароль не сохраняется."; return }
         busy = true
+        connectionStarted = Date()
+        defer { connectionStarted = nil }
         let generation = sleepGeneration
         await persist()
         let reachable = await Task.detached { Session.isReachable(host: config.host, port: config.port) }.value
@@ -122,7 +125,11 @@ import ConnectionLifecycle
         }
         status = "Подключение диска…"
         do {
-            disk = try await connection.connect(configuration: config, target: target.trimmingCharacters(in: .whitespacesAndNewlines), lun: lunNumber)
+            disk = try await connection.connect(configuration: config, target: target.trimmingCharacters(in: .whitespacesAndNewlines), lun: lunNumber, progress: { message in
+                Task { @MainActor in
+                    if Model.shared.busy, Model.shared.disk == nil { Model.shared.status = message }
+                }
+            })
             policy.connected()
             if generation != sleepGeneration {
                 // A connect that crossed a sleep boundary is never accepted as

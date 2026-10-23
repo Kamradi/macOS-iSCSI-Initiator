@@ -1,6 +1,11 @@
 // Russian source templates are the stable keys; arguments are never translated.
 public enum EnglishCatalog {
     public static let values: [String: String] = [
+        "Прошло секунд: {0}": "Elapsed seconds: {0}",
+        "Проверка Target и LUN…": "Checking target and LUN…",
+        "Запуск локального моста…": "Starting the local bridge…",
+        "Подключение локального моста…": "Mounting the local bridge…",
+        "macOS подключает диск и проверяет том…": "macOS is attaching the disk and checking the volume…",
         "LUN {0} отсутствует у выбранного Target. Доступные LUN: {1}. Проверь Target IQN и номер LUN.": "LUN {0} is not mapped to the selected target. Available LUNs: {1}. Check the target IQN and LUN number.",
         "Target выбран. Проверь номер LUN и нажми «Проверить LUN» перед подключением.": "Target selected. Check the LUN number and click Inspect LUN before connecting.",
         "Язык": "Language",

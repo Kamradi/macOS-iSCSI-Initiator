@@ -2,7 +2,7 @@
 
 This application, its source code and this guide were created with assistance from **OpenAI’s Codex and ChatGPT**, in collaboration with the project author.
 
-Application version: **0.4.2, experimental**. Runtime testing used Apple M4, macOS 27.0.1 and Synology DS220j. The downloadable app is for Apple Silicon. Other Macs and macOS releases require separate validation.
+Application version: **0.4.3, experimental**. Runtime testing used Apple M4, macOS 27.0.1 and Synology DS220j. The downloadable app is for Apple Silicon. Other Macs and macOS releases require separate validation.
 
 [Русский гайд](GUIDE_RU.md) · [Project overview](../README.md)
 
@@ -62,7 +62,7 @@ If you restrict access by initiator IQN, permit the appropriate initiator. Disco
 ### Download a build
 
 1. Open the project's [Releases](https://github.com/Kamradi/macOS-iSCSI-Initiator/releases).
-2. Download `macOS-iSCSI-Initiator-0.4.2-macos-arm64.zip` and `SHA256SUMS.txt`.
+2. Download `macOS-iSCSI-Initiator-0.4.3-macos-arm64.zip` and `SHA256SUMS.txt`.
 3. Optionally compare `shasum -a 256 ARCHIVE_NAME.zip` with the published checksum. A matching hash verifies the archive bytes, not a trusted publisher signature.
 4. Extract the ZIP, move `SynologyInitiator.app` to Applications or another permanent folder, and open it.
 
@@ -190,6 +190,8 @@ You can inspect available LUN numbers with:
 dist/iscsi luns nas.example.net iqn.2026-10.example:storage.target1
 ```
 
+Connection checks the target/LUN, starts the local bridge and attaches the volume in macOS. The UI shows the current stage and elapsed seconds. Network-backed disks can take tens of seconds. An operation timeout is reported as an error; safely eject any partial attachment before retrying.
+
 ## 10. Troubleshooting
 
 | Symptom | Check |
@@ -214,6 +216,7 @@ Settings directory: `~/Library/Application Support/SynologyInitiator/`.
 
 - `profile.json`: connection settings, automatic reconnect and incomplete-disconnect flag; no password.
 - `active.json`: owned attachment and local bridge paths.
+- `connection.log`: stages and durations of system connection operations.
 - `lifecycle.log`: sleep, wake and connection events.
 - Per-session directories: `ready.json` and `bridge.log`.
 
