@@ -246,6 +246,35 @@ public final class Session {
         }
     }
     /// Check target mapping before trying to expose a disk to macOS.
+    public func deviceIdentifier(lun: UInt16) throws -> String? {
+        var cdb: [UInt8] = [0x12, 1, 0x83, 0, 252, 0]
+        if let bytes = try? command(lun: lun, cdb: cdb, expected: 252),
+           let identifier = Self.logicalUnitIdentifier(bytes) { return identifier }
+        cdb[2] = 0x80
+        let bytes = try command(lun: lun, cdb: cdb, expected: 252)
+        guard bytes.count >= 4, bytes[1] == 0x80 else { return nil }
+        let length = Int(bytes.uint(2, 2))
+        guard length > 0, length <= bytes.count - 4 else { return nil }
+        return "serial:" + bytes[4..<(4 + length)].map { String(format: "%02x", $0) }.joined()
+    }
+    static func logicalUnitIdentifier(_ bytes: [UInt8]) -> String? {
+        guard bytes.count >= 4, bytes[1] == 0x83 else { return nil }
+        let length = Int(bytes.uint(2, 2))
+        guard length <= bytes.count - 4 else { return nil }
+        var offset = 4, identifiers: [String] = []
+        while offset < 4 + length {
+            guard offset + 4 <= 4 + length else { return nil }
+            let size = Int(bytes[offset + 3]), association = (bytes[offset + 1] >> 4) & 3
+            let type = bytes[offset + 1] & 15, code = bytes[offset] & 15
+            guard offset + 4 + size <= 4 + length else { return nil }
+            if association == 0, size > 0, [UInt8(1), 2, 3, 8].contains(type), [UInt8(1), 2, 3].contains(code) {
+                let value = bytes[(offset + 4)..<(offset + 4 + size)].map { String(format: "%02x", $0) }.joined()
+                identifiers.append("\(code):\(type):" + value)
+            }
+            offset += 4 + size
+        }
+        return identifiers.isEmpty ? nil : identifiers.sorted().joined(separator: ";")
+    }
     public func requireAvailableLUN(_ lun: UInt16) throws {
         let available = try listLUNs()
         guard available.contains(lun) else {

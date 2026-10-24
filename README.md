@@ -44,7 +44,7 @@ The virtual file streams I/O to the real LUN; it is not a downloaded local image
 - **One computer at a time per ordinary APFS/exFAT LUN.** Cross-host ownership is not enforced by the app. Do not mount it simultaneously from Windows and macOS.
 - exFAT is a compatible filesystem choice, but end-to-end Windows/exFAT switching has not been tested with this app. Real write/persistence tests used APFS.
 - Sleep preparation has a limited OS deadline. Busy files, active writes, lid-close behavior under load, and an already lost connection may prevent clean detach.
-- After an uncertain I/O failure, the session is offlined and automatic remount is blocked. There is no write replay or automatic forced eject.
+- After an uncertain write or flush failure, the session is offlined and automatic remount is blocked. Idle transport loss and read-only transport errors can recover in the same mounted disk when the LUN identity and geometry match. There is no write replay or automatic forced eject.
 - CHAP is supported in protocol tests, but has not been validated on the real NAS. Mutual CHAP, digests, multipath and full RFC compliance are not implemented.
 - Local settings and bridge logs live under `~/Library/Application Support/SynologyInitiator/`. CHAP passwords are not saved in those files.
 - Startup at login is not installed. Reconnect can take about a minute on the tested setup.

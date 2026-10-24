@@ -13,11 +13,18 @@ do {
     let backend = try ISCSIBackend(configuration: Configuration(host: args[0], port: UInt16(env["ISCSI_PORT"] ?? "3260") ?? 3260, username: env["ISCSI_USERNAME"] ?? "", password: env["ISCSI_PASSWORD"] ?? ""), target: args[1], lun: lun, writable: args.contains("--read-write"))
     let server = try NFSServer(backend: backend)
     server.onError = { message in FileHandle.standardError.write(Data(("I/O: " + message + "\n").utf8)) }
-    let state: [String: Any] = ["pid": ProcessInfo.processInfo.processIdentifier, "port": server.port, "export": server.exportPath, "size": backend.size, "writable": backend.writable]
+    let state: [String: Any] = ["pid": ProcessInfo.processInfo.processIdentifier, "port": server.port, "export": server.exportPath, "size": backend.size, "writable": backend.writable, "resumable": backend.canReconnect]
     let url = URL(fileURLWithPath: args[3])
     try JSONSerialization.data(withJSONObject: state, options: [.prettyPrinted, .sortedKeys]).write(to: url, options: .atomic)
     try FileManager.default.setAttributes([.posixPermissions: 0o600], ofItemAtPath: url.path)
     let healthURL = url.deletingLastPathComponent().appendingPathComponent("health.json")
+    server.onUnavailable = { _ in
+        let waiting: [String: Any] = ["pid": ProcessInfo.processInfo.processIdentifier, "state": "reconnecting", "updated": Date().timeIntervalSince1970]
+        if let data = try? JSONSerialization.data(withJSONObject: waiting) {
+            try? data.write(to: healthURL, options: .atomic)
+            try? FileManager.default.setAttributes([.posixPermissions: 0o600], ofItemAtPath: healthURL.path)
+        }
+    }
     server.onHealthy = {
         let health: [String: Any] = ["pid": ProcessInfo.processInfo.processIdentifier, "lastSuccess": Date().timeIntervalSince1970]
         do {

@@ -17,6 +17,7 @@ public final class NFSServer: @unchecked Sendable {
     private let lock = NSLock()
     private var modified = UInt32(Date().timeIntervalSince1970)
     private var errorReported = false
+    public var onUnavailable: (@Sendable (String) -> Void)?
     public var onHealthy: (@Sendable () -> Void)?
     public var onError: (@Sendable (String) -> Void)?
     public init(backend: BlockBackend) throws {
@@ -55,6 +56,7 @@ public final class NFSServer: @unchecked Sendable {
         }
     }
     private func report(_ error: Error) {
+        if let temporary = error as? BackendUnavailable { onUnavailable?(temporary.reason); return }
         if !errorReported { errorReported = true; onError?(error.localizedDescription) }
     }
     private func read(_ fd: Int32, count: Int) throws -> [UInt8] {
@@ -188,7 +190,7 @@ public final class NFSServer: @unchecked Sendable {
                 let data = actual == 0 ? Data() : try backend.read(offset: offset, count: actual)
                 guard data.count == actual else { return failure(5) }
                 w.word(0); w.bytes += post(true); w.word(UInt32(data.count)); w.bool(offset + UInt64(actual) >= backend.size); w.opaque(Array(data))
-            } catch { report(error); return failure(5) }
+            } catch { report(error); return failure(error is BackendUnavailable ? 10008 : 5) }
         case 7:
             let offset = try r.long(), count = try r.word(), stable = try r.word(), data = try r.opaque()
             guard file, backend.writable else { return failure(30) }
@@ -198,7 +200,7 @@ public final class NFSServer: @unchecked Sendable {
                 // Every acknowledgement is FILE_SYNC, including UNSTABLE requests.
                 try backend.flush(); modified = UInt32(Date().timeIntervalSince1970)
                 w.word(0); w.bytes += wcc(true); w.word(count); w.word(2); w.bytes += verifier
-            } catch { report(error); return failure(5) }
+            } catch { report(error); return failure(error is BackendUnavailable ? 10008 : 5) }
         case 16, 17:
             let cookie = try r.long(); _ = try r.fixed(8); _ = try r.word()
             if procedure == 17 { _ = try r.word() }
@@ -222,7 +224,7 @@ public final class NFSServer: @unchecked Sendable {
         case 21:
             _ = try r.long(); _ = try r.word()
             do { try backend.flush(); w.word(0); w.bytes += wcc(file); w.bytes += verifier }
-            catch { report(error); return failure(5) }
+            catch { report(error); return failure(error is BackendUnavailable ? 10008 : 5) }
         default:
             return failure(10004)
         }

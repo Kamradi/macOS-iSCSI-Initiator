@@ -6,8 +6,9 @@ private final class MemoryDisk: BlockBackend {
     var bytes = Data(repeating: 0, count: 8192)
     var writable = true
     var flushes = 0
+    var readFailure: Error?
     var size: UInt64 { UInt64(bytes.count) }
-    func read(offset: UInt64, count: Int) throws -> Data { bytes.subdata(in: Int(offset)..<(Int(offset) + count)) }
+    func read(offset: UInt64, count: Int) throws -> Data { if let readFailure { throw readFailure }; return bytes.subdata(in: Int(offset)..<(Int(offset) + count)) }
     func write(offset: UInt64, data: Data) throws { bytes.replaceSubrange(Int(offset)..<(Int(offset) + data.count), with: data) }
     func flush() throws { flushes += 1 }
     func keepAlive() throws {}
@@ -33,6 +34,17 @@ final class BridgeTests: XCTestCase {
         var lookup = try rpc(server, procedure: 3, args: args)
         XCTAssertEqual(try lookup.word(), 0)
         return try lookup.opaque()
+    }
+    func testTemporaryReadFailureReturnsRetryableJukeboxInsteadOfIOError() throws {
+        let disk = MemoryDisk(), server = try NFSServer(backend: disk), handle = try file(server)
+        disk.readFailure = BackendUnavailable(NSError(domain: "test.offline", code: 1))
+        var args = XDRWriter(); args.opaque(handle); args.long(0); args.word(512)
+        var response = try rpc(server, procedure: 6, args: args)
+        XCTAssertEqual(try response.word(), 10008)
+        XCTAssertEqual(disk.flushes, 0)
+        disk.readFailure = nil
+        response = try rpc(server, procedure: 6, args: args)
+        XCTAssertEqual(try response.word(), 0)
     }
     func testPrivateExportRejectsWrongPath() throws {
         let server = try NFSServer(backend: MemoryDisk())

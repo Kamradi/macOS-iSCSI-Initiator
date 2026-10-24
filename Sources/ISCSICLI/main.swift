@@ -5,12 +5,12 @@ import CryptoKit
 
 let args = Array(CommandLine.arguments.dropFirst())
 guard args.count >= 2 else {
-    print(LocalizedText("Использование: iscsi discover HOST [PORT] | iscsi luns HOST TARGET | iscsi inspect HOST TARGET [LUN] [PORT] | iscsi readcheck HOST TARGET LUN\nCHAP: ISCSI_USERNAME и ISCSI_PASSWORD в окружении. Только чтение.").render())
+    print(LocalizedText("Использование: iscsi discover HOST [PORT] | iscsi luns HOST TARGET | iscsi inspect HOST TARGET [LUN] [PORT] | iscsi readcheck HOST TARGET LUN | iscsi identity HOST TARGET [LUN] [PORT]\nCHAP: ISCSI_USERNAME и ISCSI_PASSWORD в окружении. Только чтение.").render())
     exit(2)
 }
 do {
     let action = args[0]
-    guard ["discover", "inspect", "luns", "readcheck", "writecheck"].contains(action) else { throw ISCSIError.message("Неизвестная команда") }
+    guard ["discover", "inspect", "luns", "readcheck", "writecheck", "identity"].contains(action) else { throw ISCSIError.message("Неизвестная команда") }
     if action != "discover", args.count < 3 { throw ISCSIError.message("Не указан Target IQN") }
     let portString = action == "discover" ? (args.count > 2 ? args[2] : "3260") : (args.count > 4 ? args[4] : "3260")
     guard let port = UInt16(portString), port > 0 else { throw ISCSIError.message("Некорректный порт") }
@@ -21,6 +21,9 @@ do {
     if action == "discover" {
         try session.login()
         for target in try session.discover() { print("\(target.name)\n  \(target.portals.joined(separator: ", "))") }
+    } else if action == "identity" {
+        try session.login(target: args[2])
+        print(try session.deviceIdentifier(lun: UInt16(args.count > 3 ? args[3] : "0") ?? 0) ?? "unavailable")
     } else if action == "luns" {
         try session.login(target: args[2])
         print(LocalizedText("Доступные LUN: \(try session.listLUNs().map(String.init).joined(separator: ", "))").render())

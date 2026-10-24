@@ -3,8 +3,9 @@ import Foundation
 import Darwin
 
 public enum ISCSIError: Error, LocalizedError, LocalizableError {
-    case message(LocalizedText)
-    public var localizedText: LocalizedText { switch self { case .message(let text): return text } }
+    case message(LocalizedText), transport(LocalizedText)
+    public var localizedText: LocalizedText { switch self { case .message(let text), .transport(let text): return text } }
+    public var isTransportFailure: Bool { if case .transport = self { return true }; return false }
     public var errorDescription: String? { localizedText.render() }
 }
 
@@ -58,7 +59,7 @@ final class TCPTransport: Transport {
         hints.ai_socktype = SOCK_STREAM; hints.ai_protocol = IPPROTO_TCP
         var addresses: UnsafeMutablePointer<addrinfo>?
         let result = getaddrinfo(host, String(port), &hints, &addresses)
-        guard result == 0, let first = addresses else { throw ISCSIError.message("Не удалось найти адрес NAS / сервера: \(String(cString: gai_strerror(result)))") }
+        guard result == 0, let first = addresses else { throw ISCSIError.transport("Не удалось найти адрес NAS / сервера: \(String(cString: gai_strerror(result)))") }
         defer { freeaddrinfo(first) }
         var entry: UnsafeMutablePointer<addrinfo>? = first
         while let current = entry {
@@ -88,7 +89,7 @@ final class TCPTransport: Transport {
             }
             entry = a.ai_next
         }
-        guard fd >= 0 else { throw ISCSIError.message("Нет подключения к \(host):\(port). Проверь адрес, сеть и службу iSCSI.") }
+        guard fd >= 0 else { throw ISCSIError.transport("Нет подключения к \(host):\(port). Проверь адрес, сеть и службу iSCSI.") }
     }
     deinit { close() }
     func close() { if fd >= 0 { Darwin.close(fd); fd = -1 } }
@@ -102,7 +103,7 @@ final class TCPTransport: Transport {
             while offset < bytes.count {
                 let n = Darwin.send(fd, buffer.baseAddress!.advanced(by: offset), bytes.count - offset, 0)
                 if n < 0 && errno == EINTR { continue }
-                guard n > 0 else { throw ISCSIError.message("Ошибка передачи или тайм-аут сети") }
+                guard n > 0 else { throw ISCSIError.transport("Ошибка передачи или тайм-аут сети") }
                 offset += n
             }
         }
@@ -114,7 +115,7 @@ final class TCPTransport: Transport {
             while offset < count {
                 let n = recv(fd, buffer.baseAddress!.advanced(by: offset), count - offset, 0)
                 if n < 0 && errno == EINTR { continue }
-                guard n > 0 else { throw ISCSIError.message("Соединение прервано или истёк тайм-аут") }
+                guard n > 0 else { throw ISCSIError.transport("Соединение прервано или истёк тайм-аут") }
                 offset += n
             }
         }

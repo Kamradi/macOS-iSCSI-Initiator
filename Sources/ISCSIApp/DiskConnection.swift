@@ -158,11 +158,12 @@ actor DiskConnection {
         guard FileManager.default.fileExists(atPath: url.path) else { return nil }
         return try JSONDecoder().decode(ConnectionProfile.self, from: Data(contentsOf: url))
     }
-    enum WakeHealth: Sendable { case healthy, failed, waiting }
+    enum WakeHealth: Sendable { case healthy, failed, waiting, reconnecting }
     func wakeHealth(since wake: Date) throws -> WakeHealth {
         guard let disk = current else { return .failed }
         switch try health() {
         case .failed, .ejected: return .failed
+        case .reconnecting: return .reconnecting
         case .healthy: break
         }
         let url = URL(fileURLWithPath: disk.runtimeDirectory).appendingPathComponent("health.json")
@@ -172,12 +173,19 @@ actor DiskConnection {
               let success = health["lastSuccess"] as? Double else { return .waiting }
         return WakeHeartbeat.isFresh(pid: pid, expectedPID: disk.helperPID, lastSuccess: success, wake: wake, now: Date()) ? .healthy : .waiting
     }
-    enum Health: Sendable { case healthy, failed, ejected }
+    enum Health: Sendable { case healthy, failed, ejected, reconnecting }
     func health() throws -> Health {
         guard let disk = current else { return .ejected }
         let log = URL(fileURLWithPath: disk.runtimeDirectory).appendingPathComponent("bridge.log")
         if let text = try? String(contentsOf: log, encoding: .utf8), text.contains("I/O:") { return .failed }
         if let helper, !helper.isRunning { return .failed }
-        return try images().contains(where: { $0["image-path"] as? String == disk.mountDirectory + "/lun.raw" }) ? .healthy : .ejected
+        guard try images().contains(where: { $0["image-path"] as? String == disk.mountDirectory + "/lun.raw" }) else { return .ejected }
+        let healthURL = URL(fileURLWithPath: disk.runtimeDirectory).appendingPathComponent("health.json")
+        if let data = try? Data(contentsOf: healthURL),
+           let health = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+           health["state"] as? String == "reconnecting", health["pid"] as? Int32 == disk.helperPID {
+            return .reconnecting
+        }
+        return .healthy
     }
 }

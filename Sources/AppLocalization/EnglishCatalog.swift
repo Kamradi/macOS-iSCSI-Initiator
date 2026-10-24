@@ -1,6 +1,10 @@
 // Russian source templates are the stable keys; arguments are never translated.
 public enum EnglishCatalog {
     public static let values: [String: String] = [
+        "Не подтверждена возможность безопасного восстановления LUN.": "Safe recovery of this LUN cannot be confirmed.",
+        "Идентификатор или размер LUN изменился. Подключение остановлено.": "The LUN identity or geometry changed. The connection was stopped.",
+        "Ожидание восстановления связи с NAS. Диск остаётся подключённым.": "Waiting to restore the NAS connection. The disk remains attached.",
+        "Связь с NAS восстановлена. Диск остался подключённым.": "NAS connection restored. The disk remained attached.",
         "Извлечение заблокировано открытым файлом или просмотром. Закрой проигрыватель и окна просмотра. Диск остаётся подключённым.": "An open file or preview is blocking ejection. Close the player and preview windows. The disk remains attached.",
         "Проверка существующего подключения после сна…": "Checking the existing connection after sleep…",
         "Диск доступен после сна. Существующее подключение сохранено.": "Disk available after sleep. The existing connection was preserved.",
@@ -138,7 +142,7 @@ public enum EnglishCatalog {
         "Для проверки записи нужно ISCSI_ALLOW_WRITE_TEST=1": "The write test requires ISCSI_ALLOW_WRITE_TEST=1",
         "Запись не совпала при чтении": "Read-back data did not match the write",
         "Данные при повторном чтении изменились": "Data changed on repeated read",
-        "Использование: iscsi discover HOST [PORT] | iscsi luns HOST TARGET | iscsi inspect HOST TARGET [LUN] [PORT] | iscsi readcheck HOST TARGET LUN\nCHAP: ISCSI_USERNAME и ISCSI_PASSWORD в окружении. Только чтение.": "Usage: iscsi discover HOST [PORT] | iscsi luns HOST TARGET | iscsi inspect HOST TARGET [LUN] [PORT] | iscsi readcheck HOST TARGET LUN\nCHAP: ISCSI_USERNAME and ISCSI_PASSWORD environment variables. Read-only diagnostics.",
+        "Использование: iscsi discover HOST [PORT] | iscsi luns HOST TARGET | iscsi inspect HOST TARGET [LUN] [PORT] | iscsi readcheck HOST TARGET LUN | iscsi identity HOST TARGET [LUN] [PORT]\nCHAP: ISCSI_USERNAME и ISCSI_PASSWORD в окружении. Только чтение.": "Usage: iscsi discover HOST [PORT] | iscsi luns HOST TARGET | iscsi inspect HOST TARGET [LUN] [PORT] | iscsi readcheck HOST TARGET LUN | iscsi identity HOST TARGET [LUN] [PORT]\nCHAP: ISCSI_USERNAME and ISCSI_PASSWORD environment variables. Read-only diagnostics.",
         "Доступные LUN: {0}": "Available LUNs: {0}",
         "Запись, flush и чтение 4096 байт совпали. Исходные блоки восстановлены.": "4096-byte write, flush and read-back matched. Original blocks were restored.",
         "Чтение начала LUN: {0} байт; повтор совпал.\nЧтение последнего блока: {1} байт.\nSHA-256 начала: {2}\nЗапись не выполнялась.": "Read from start of LUN: {0} bytes; repeated read matched.\nLast block read: {1} bytes.\nSHA-256 of start: {2}\nNo writes were performed.",

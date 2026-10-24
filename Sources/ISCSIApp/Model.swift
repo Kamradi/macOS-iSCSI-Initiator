@@ -33,6 +33,7 @@ import ConnectionLifecycle
     private var checking = false
     private var sleepGeneration = 0
     private var lastWake: Date?
+    private var bridgeReconnecting = false
     private let logURL: URL
     init() {
         logURL = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0].appendingPathComponent("SynologyInitiator/lifecycle.log")
@@ -210,6 +211,9 @@ import ConnectionLifecycle
                         status = "Диск доступен после сна. Существующее подключение сохранено."
                         log("wake: existing session confirmed healthy; no detach")
                         await persist(); return
+                    case .reconnecting:
+                        status = "Ожидание восстановления связи с NAS. Диск остаётся подключённым."
+                        return
                     case .waiting:
                         if Date().timeIntervalSince(wake) < 25 {
                             status = "Проверка существующего подключения после сна…"; return
@@ -235,7 +239,14 @@ import ConnectionLifecycle
                 let health = try await connection.health()
                 guard !busy, disk?.runtimeDirectory == observed else { return }
                 switch health {
-                case .healthy: break
+                case .healthy:
+                    if bridgeReconnecting {
+                        bridgeReconnecting = false
+                        status = "Связь с NAS восстановлена. Диск остался подключённым."
+                    }
+                case .reconnecting:
+                    bridgeReconnecting = true
+                    status = "Ожидание восстановления связи с NAS. Диск остаётся подключённым."
                 case .failed:
                     if !needsAttention { log("transport lost; automatic reconnect blocked") }
                     policy.unsafeDisconnect(); needsAttention = true

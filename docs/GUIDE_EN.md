@@ -2,7 +2,7 @@
 
 This application, its source code and this guide were created with assistance from **OpenAI’s Codex and ChatGPT**, in collaboration with the project author.
 
-Application version: **0.4.5, experimental**. Runtime testing used Apple M4, macOS 27.0.1 and Synology DS220j. The downloadable app is for Apple Silicon. Other Macs and macOS releases require separate validation.
+Application version: **0.5.0, experimental**. Runtime testing used Apple M4, macOS 27.0.1 and Synology DS220j. The downloadable app is for Apple Silicon. Other Macs and macOS releases require separate validation.
 
 [Русский гайд](GUIDE_RU.md) · [Project overview](../README.md)
 
@@ -62,7 +62,7 @@ If you restrict access by initiator IQN, permit the appropriate initiator. Disco
 ### Download a build
 
 1. Open the project's [Releases](https://github.com/Kamradi/macOS-iSCSI-Initiator/releases).
-2. Download `macOS-iSCSI-Initiator-0.4.5-macos-arm64.zip` and `SHA256SUMS.txt`.
+2. Download `macOS-iSCSI-Initiator-0.5.0-macos-arm64.zip` and `SHA256SUMS.txt`.
 3. Optionally compare `shasum -a 256 ARCHIVE_NAME.zip` with the published checksum. A matching hash verifies the archive bytes, not a trusted publisher signature.
 4. Extract the ZIP, move `SynologyInitiator.app` to Applications or another permanent folder, and open it.
 
@@ -179,6 +179,8 @@ Keep the app running in the menu bar and enable automatic connection.
 macOS permits only a limited preparation interval. A busy volume, large write or already failed network can prevent successful eject. Lid close under load, power loss and force-quitting a process are not guaranteed safe. Startup at login is not installed.
 
 If an open file prevents ejection before sleep, the app first checks the existing iSCSI session after wake. A fresh successful response from the same bridge after wake preserves the working attachment without ejection or reconnect. If the session cannot be confirmed healthy, the app retries ordinary safe ejection with backoff and reconnects only after it succeeds. Reading cached files alone does not confirm a live NAS connection. Close files, players and Finder Quick Look windows. A stuck system thumbnail helper can retain a file even after its window closes. Recovery waits while the volume is busy or a clean flush cannot be confirmed; it never force-ejects. Seamless sleep with open files or active writes is not guaranteed. Manual ejection cancels automatic recovery.
+
+From 0.5.0, idle keepalive or read-only transport loss can recover within the bridge when no write is uncertain. The bridge validates a stable LUN identifier and geometry; the macOS device and open descriptors remain unchanged. File operations may wait or fail under macOS rules while the NAS is unavailable. A possibly transmitted write or failed flush is never automatically replayed. Recovery is disabled when a stable LUN identity is unavailable. **Never mount this LUN from another computer or change its contents while the Mac retains its attachment, including while waiting for network access.**
 
 ## 9. Connect other LUNs
 
