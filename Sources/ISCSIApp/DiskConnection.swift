@@ -139,7 +139,7 @@ actor DiskConnection {
         if let image {
             let entities = image["system-entities"] as? [[String: Any]] ?? []
             guard let device = entities.compactMap({ $0["dev-entry"] as? String }).first(where: { $0.range(of: "^/dev/disk[0-9]+$", options: .regularExpression) != nil }) else { throw ISCSIError.message("Не определён диск для извлечения") }
-            _ = try run("/usr/bin/hdiutil", ["detach", device], timeout: remaining())
+            _ = try run("/usr/sbin/diskutil", ["eject", device], timeout: remaining())
         }
         _ = try run("/sbin/umount", [disk.mountDirectory], timeout: remaining())
         if let helper, helper.isRunning { helper.terminate() }

@@ -17,8 +17,8 @@ cat > "$APP/Contents/Info.plist" <<'PLIST'
 <key>CFBundleDevelopmentRegion</key><string>en</string>
 <key>CFBundleLocalizations</key><array><string>en</string><string>ru</string></array>
 <key>CFBundlePackageType</key><string>APPL</string>
-<key>CFBundleShortVersionString</key><string>0.4.3</string>
-<key>CFBundleVersion</key><string>9</string>
+<key>CFBundleShortVersionString</key><string>0.4.4</string>
+<key>CFBundleVersion</key><string>10</string>
 <key>LSMinimumSystemVersion</key><string>14.0</string>
 <key>NSHighResolutionCapable</key><true/>
 <key>NSLocalNetworkUsageDescription</key><string>Connect to an iSCSI target on your NAS or server.</string>

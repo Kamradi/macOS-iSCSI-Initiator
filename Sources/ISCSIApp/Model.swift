@@ -160,12 +160,12 @@ import ConnectionLifecycle
         } catch {
             policy.unsafeDisconnect(); needsAttention = true; busy = false
             status = "Диск не удалось безопасно извлечь. Закрой файлы на нём и повтори: \(LocalizedText(error: error))"
-            log("detach failed; automatic reconnect blocked")
+            log("detach failed; automatic reconnect blocked: " + error.localizedDescription.replacingOccurrences(of: "\n", with: " "))
             await persist(); return false
         }
     }
     func prepareForSleep(acknowledge: @escaping @Sendable () -> Void) async {
-        sleepGeneration += 1; policy.willSleep(); log("sleep requested")
+        sleepGeneration += 1; policy.willSleep(recoverMountedDisk: disk != nil || busy); log("sleep requested")
         let deadline = ProcessInfo.processInfo.systemUptime + 23
         // A pending connect/probe must finish first; never race mount and detach.
         while busy && ProcessInfo.processInfo.systemUptime < deadline {
@@ -184,7 +184,9 @@ import ConnectionLifecycle
         sleepGeneration += 1; policy.woke(now: Date()); log("wake received")
         if policy.needsAttention || disk != nil {
             policy.unsafeDisconnect(); needsAttention = true
-            status = "Осталось подключение после сна. Закрой файлы и нажми «Извлечь диск»."
+            status = policy.recoveryAfterSleep && automatic
+                ? "После сна осталось занятое подключение. Закрой файлы на диске; приложение повторит безопасное извлечение и подключение."
+                : "Осталось подключение после сна. Закрой файлы и нажми «Извлечь диск»."
         } else { status = "Ожидание доступа к iSCSI-серверу. Сеть или VPN можно подключить позже." }
         Task { await persist() }
     }
@@ -192,6 +194,18 @@ import ConnectionLifecycle
         guard !busy, !checking, !policy.sleeping else { return }
         checking = true
         defer { checking = false }
+        if networkAvailable && policy.shouldRecoverAfterSleep(now: Date(), mounted: disk != nil, busy: busy) {
+            // Retry only an ordinary detach. Never force-unmount, bypass the
+            // filesystem flush, replay a write, or mount over the old session.
+            if await disconnect(manual: false, timeout: 15) {
+                log("wake recovery: previous attachment safely removed")
+                if automatic { await attemptConnection(manual: false) }
+            } else {
+                policy.failed(now: Date())
+                status = "После сна диск пока занят или не отвечает. Закрой файлы и окна просмотра; безопасное восстановление повторится автоматически."
+            }
+            return
+        }
         if disk != nil {
             let observed = disk?.runtimeDirectory
             do {

@@ -3,6 +3,28 @@ import XCTest
 
 final class LifecycleTests: XCTestCase {
     private let now = Date(timeIntervalSince1970: 10000)
+    func testBusySleepAttachmentIsRetriedAfterWakeWithoutAuthorizingRemount() {
+        var p = ReconnectPolicy(); p.enabled = true
+        let now = Date()
+        p.willSleep(recoverMountedDisk: true); p.unsafeDisconnect()
+        XCTAssertFalse(p.shouldRecoverAfterSleep(now: now, mounted: true, busy: false))
+        p.woke(now: now)
+        XCTAssertTrue(p.shouldRecoverAfterSleep(now: now.addingTimeInterval(4), mounted: true, busy: false))
+        XCTAssertFalse(p.shouldConnect(now: now.addingTimeInterval(4), mounted: false, busy: false))
+        p.failed(now: now.addingTimeInterval(4))
+        XCTAssertFalse(p.shouldRecoverAfterSleep(now: now.addingTimeInterval(5), mounted: true, busy: false))
+        p.cleanDetach()
+        XCTAssertFalse(p.recoveryAfterSleep)
+        XCTAssertTrue(p.shouldConnect(now: now.addingTimeInterval(20), mounted: false, busy: false))
+    }
+    func testManualStopAndUnrelatedFaultDoNotTriggerSleepRecovery() {
+        var p = ReconnectPolicy(); p.enabled = true
+        p.unsafeDisconnect(); p.woke(now: .distantPast)
+        XCTAssertFalse(p.shouldRecoverAfterSleep(now: Date(), mounted: true, busy: false))
+        p.willSleep(recoverMountedDisk: true); p.woke(now: .distantPast); p.manualStop()
+        XCTAssertFalse(p.shouldRecoverAfterSleep(now: Date(), mounted: true, busy: false))
+    }
+
     func testCleanSleepWakeAwayFromHomeThenReturn() {
         var p = ReconnectPolicy(); p.enabled = true
         p.connected(); p.willSleep()

@@ -4,7 +4,7 @@
 
 Environment: Apple M4, macOS 27.0.1, Synology DS220j. Builds used Swift 6.4/Xcode and arm64. The deployment target in Package.swift is macOS 14; no compatibility matrix for older releases is claimed.
 
-- 33 automated tests: iSCSI framing, text parsing, CHAP vectors, discovery, digest rejection, read boundaries/order, R2T/Data-Out write and flush, unavailable LUNs, NFS export capabilities, read-only/bounds checks, durable acknowledgements, malformed XDR, reconnect backoff, sleep/wake policy, manual disconnect intent, persisted fault flags and subprocess deadlines.
+- 35 automated tests: iSCSI framing, text parsing, CHAP vectors, discovery, digest rejection, read boundaries/order, R2T/Data-Out write and flush, unavailable LUNs, NFS export capabilities, read-only/bounds checks, durable acknowledgements, malformed XDR, reconnect backoff, sleep/wake policy, manual disconnect intent, persisted fault flags and subprocess deadlines.
 - Seven of the automated tests cover language selection, saved preferences, live translation, nested error messages, interpolation and catalog consistency.
 - Real NAS discovery, login without CHAP, LUN capacity, first/last block and repeated 1 MiB reads.
 - Guarded write/read/flush test on a disposable LUN.
@@ -18,6 +18,10 @@ Environment: Apple M4, macOS 27.0.1, Synology DS220j. Builds used Swift 6.4/Xcod
 - Version 0.4.2: regression test verifies that a missing target/LUN mapping is rejected before inquiry, disk read or write commands.
 
 - Version 0.4.3: added regression coverage for a partition slice appearing before the backing device and a synthesized APFS device appearing before its partition map. Added stage/timing diagnostics; no filesystem-check bypass or forced detach was introduced.
+
+- Version 0.4.4: regression tests cover deferred recovery of a busy sleep attachment, retry backoff, blocking remount until clean detach, and cancellation by manual stop.
+
+- Version 0.4.4: real sleep/wake with a controlled read-only file handle reproduced an ejection refusal; after releasing the handle, deferred recovery safely removed the old attachment automatically. This is a limited local test, not qualification for arbitrary applications or active writes.
 
 ## Not verified
 

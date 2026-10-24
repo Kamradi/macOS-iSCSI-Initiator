@@ -1,6 +1,8 @@
 // Russian source templates are the stable keys; arguments are never translated.
 public enum EnglishCatalog {
     public static let values: [String: String] = [
+        "После сна осталось занятое подключение. Закрой файлы на диске; приложение повторит безопасное извлечение и подключение.": "A busy attachment remains after sleep. Close files on the disk; the app will retry safe ejection and reconnect.",
+        "После сна диск пока занят или не отвечает. Закрой файлы и окна просмотра; безопасное восстановление повторится автоматически.": "After sleep, the disk is still busy or unresponsive. Close files and preview windows; safe recovery will retry automatically.",
         "Прошло секунд: {0}": "Elapsed seconds: {0}",
         "Проверка Target и LUN…": "Checking target and LUN…",
         "Запуск локального моста…": "Starting the local bridge…",

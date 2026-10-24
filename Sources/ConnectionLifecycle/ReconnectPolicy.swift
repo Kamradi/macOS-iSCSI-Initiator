@@ -7,13 +7,20 @@ public struct ReconnectPolicy: Sendable {
     public var enabled = false
     public private(set) var sleeping = false
     public private(set) var needsAttention = false
+    public private(set) var recoveryAfterSleep = false
     public private(set) var failures = 0
     public private(set) var retryAt = Date.distantPast
     public init() {}
     public func shouldConnect(now: Date, mounted: Bool, busy: Bool) -> Bool {
         enabled && !sleeping && !needsAttention && !mounted && !busy && now >= retryAt
     }
-    public mutating func willSleep() { sleeping = true }
+    public mutating func willSleep(recoverMountedDisk: Bool = false) {
+        sleeping = true
+        if enabled && recoverMountedDisk { recoveryAfterSleep = true }
+    }
+    public func shouldRecoverAfterSleep(now: Date, mounted: Bool, busy: Bool) -> Bool {
+        enabled && recoveryAfterSleep && !sleeping && (mounted || needsAttention) && !busy && now >= retryAt
+    }
     public mutating func woke(now: Date) { sleeping = false; retryAt = now.addingTimeInterval(3) }
     public mutating func connected() { failures = 0; retryAt = .distantPast }
     public mutating func failed(now: Date) {
@@ -21,9 +28,9 @@ public struct ReconnectPolicy: Sendable {
         retryAt = now.addingTimeInterval(min(120, 15 * pow(2, Double(failures - 1))))
     }
     public mutating func unsafeDisconnect() { needsAttention = true }
-    public mutating func cleanDetach() { needsAttention = false; failures = 0; retryAt = .distantPast }
+    public mutating func cleanDetach() { needsAttention = false; recoveryAfterSleep = false; failures = 0; retryAt = .distantPast }
     public mutating func retryNow() { retryAt = .distantPast }
-    public mutating func manualStop() { enabled = false; retryAt = .distantFuture }
+    public mutating func manualStop() { enabled = false; recoveryAfterSleep = false; retryAt = .distantFuture }
 }
 
 public struct ConnectionProfile: Codable, Sendable {
