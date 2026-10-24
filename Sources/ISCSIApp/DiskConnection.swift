@@ -158,6 +158,20 @@ actor DiskConnection {
         guard FileManager.default.fileExists(atPath: url.path) else { return nil }
         return try JSONDecoder().decode(ConnectionProfile.self, from: Data(contentsOf: url))
     }
+    enum WakeHealth: Sendable { case healthy, failed, waiting }
+    func wakeHealth(since wake: Date) throws -> WakeHealth {
+        guard let disk = current else { return .failed }
+        switch try health() {
+        case .failed, .ejected: return .failed
+        case .healthy: break
+        }
+        let url = URL(fileURLWithPath: disk.runtimeDirectory).appendingPathComponent("health.json")
+        guard let data = try? Data(contentsOf: url),
+              let health = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+              let pid = health["pid"] as? Int32,
+              let success = health["lastSuccess"] as? Double else { return .waiting }
+        return WakeHeartbeat.isFresh(pid: pid, expectedPID: disk.helperPID, lastSuccess: success, wake: wake, now: Date()) ? .healthy : .waiting
+    }
     enum Health: Sendable { case healthy, failed, ejected }
     func health() throws -> Health {
         guard let disk = current else { return .ejected }

@@ -17,6 +17,14 @@ do {
     let url = URL(fileURLWithPath: args[3])
     try JSONSerialization.data(withJSONObject: state, options: [.prettyPrinted, .sortedKeys]).write(to: url, options: .atomic)
     try FileManager.default.setAttributes([.posixPermissions: 0o600], ofItemAtPath: url.path)
+    let healthURL = url.deletingLastPathComponent().appendingPathComponent("health.json")
+    server.onHealthy = {
+        let health: [String: Any] = ["pid": ProcessInfo.processInfo.processIdentifier, "lastSuccess": Date().timeIntervalSince1970]
+        do {
+            try JSONSerialization.data(withJSONObject: health).write(to: healthURL, options: .atomic)
+            try FileManager.default.setAttributes([.posixPermissions: 0o600], ofItemAtPath: healthURL.path)
+        } catch { /* Missing heartbeat must never be interpreted as success. */ }
+    }
     print("Bridge ready: 127.0.0.1:\(server.port), \(backend.size) bytes, writable=\(backend.writable)")
     fflush(stdout)
     server.run()

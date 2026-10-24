@@ -22,6 +22,11 @@ public struct ReconnectPolicy: Sendable {
         enabled && recoveryAfterSleep && !sleeping && (mounted || needsAttention) && !busy && now >= retryAt
     }
     public mutating func woke(now: Date) { sleeping = false; retryAt = now.addingTimeInterval(3) }
+    /// The caller must confirm a fresh round trip on the same existing session.
+    public mutating func retainedAfterSleep() {
+        guard recoveryAfterSleep, !sleeping else { return }
+        needsAttention = false; recoveryAfterSleep = false; failures = 0; retryAt = .distantPast
+    }
     public mutating func connected() { failures = 0; retryAt = .distantPast }
     public mutating func failed(now: Date) {
         failures = min(failures + 1, 5)

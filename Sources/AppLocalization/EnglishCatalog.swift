@@ -1,6 +1,9 @@
 // Russian source templates are the stable keys; arguments are never translated.
 public enum EnglishCatalog {
     public static let values: [String: String] = [
+        "Извлечение заблокировано открытым файлом или просмотром. Закрой проигрыватель и окна просмотра. Диск остаётся подключённым.": "An open file or preview is blocking ejection. Close the player and preview windows. The disk remains attached.",
+        "Проверка существующего подключения после сна…": "Checking the existing connection after sleep…",
+        "Диск доступен после сна. Существующее подключение сохранено.": "Disk available after sleep. The existing connection was preserved.",
         "После сна осталось занятое подключение. Закрой файлы на диске; приложение повторит безопасное извлечение и подключение.": "A busy attachment remains after sleep. Close files on the disk; the app will retry safe ejection and reconnect.",
         "После сна диск пока занят или не отвечает. Закрой файлы и окна просмотра; безопасное восстановление повторится автоматически.": "After sleep, the disk is still busy or unresponsive. Close files and preview windows; safe recovery will retry automatically.",
         "Прошло секунд: {0}": "Elapsed seconds: {0}",

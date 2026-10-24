@@ -17,6 +17,7 @@ public final class NFSServer: @unchecked Sendable {
     private let lock = NSLock()
     private var modified = UInt32(Date().timeIntervalSince1970)
     private var errorReported = false
+    public var onHealthy: (@Sendable () -> Void)?
     public var onError: (@Sendable (String) -> Void)?
     public init(backend: BlockBackend) throws {
         self.backend = backend; exportPath = "/" + UUID().uuidString
@@ -39,7 +40,7 @@ public final class NFSServer: @unchecked Sendable {
         timer.schedule(deadline: .now() + 10, repeating: 10)
         timer.setEventHandler { [self] in
             lock.withLock {
-                do { try backend.keepAlive() } catch { report(error) }
+                do { try backend.keepAlive(); onHealthy?() } catch { report(error) }
             }
         }
         timer.resume()

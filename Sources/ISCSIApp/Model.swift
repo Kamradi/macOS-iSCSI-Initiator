@@ -32,6 +32,7 @@ import ConnectionLifecycle
     private var timer: Timer?
     private var checking = false
     private var sleepGeneration = 0
+    private var lastWake: Date?
     private let logURL: URL
     init() {
         logURL = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0].appendingPathComponent("SynologyInitiator/lifecycle.log")
@@ -159,7 +160,13 @@ import ConnectionLifecycle
             await persist(); return true
         } catch {
             policy.unsafeDisconnect(); needsAttention = true; busy = false
-            status = "Диск не удалось безопасно извлечь. Закрой файлы на нём и повтори: \(LocalizedText(error: error))"
+            let reason = error.localizedDescription
+            if reason.contains("dissented") || reason.localizedCaseInsensitiveContains("resource busy") {
+                status = "Извлечение заблокировано открытым файлом или просмотром. Закрой проигрыватель и окна просмотра. Диск остаётся подключённым."
+                details = .literal(reason)
+            } else {
+                status = "Диск не удалось безопасно извлечь. Закрой файлы на нём и повтори: \(LocalizedText(error: error))"
+            }
             log("detach failed; automatic reconnect blocked: " + error.localizedDescription.replacingOccurrences(of: "\n", with: " "))
             await persist(); return false
         }
@@ -181,11 +188,11 @@ import ConnectionLifecycle
         acknowledge()
     }
     func didWake() {
-        sleepGeneration += 1; policy.woke(now: Date()); log("wake received")
+        sleepGeneration += 1; lastWake = Date(); policy.woke(now: Date()); log("wake received")
         if policy.needsAttention || disk != nil {
             policy.unsafeDisconnect(); needsAttention = true
             status = policy.recoveryAfterSleep && automatic
-                ? "После сна осталось занятое подключение. Закрой файлы на диске; приложение повторит безопасное извлечение и подключение."
+                ? "Проверка существующего подключения после сна…"
                 : "Осталось подключение после сна. Закрой файлы и нажми «Извлечь диск»."
         } else { status = "Ожидание доступа к iSCSI-серверу. Сеть или VPN можно подключить позже." }
         Task { await persist() }
@@ -195,6 +202,22 @@ import ConnectionLifecycle
         checking = true
         defer { checking = false }
         if networkAvailable && policy.shouldRecoverAfterSleep(now: Date(), mounted: disk != nil, busy: busy) {
+            if let wake = lastWake, disk != nil {
+                do {
+                    switch try await connection.wakeHealth(since: wake) {
+                    case .healthy:
+                        policy.retainedAfterSleep(); needsAttention = policy.needsAttention
+                        status = "Диск доступен после сна. Существующее подключение сохранено."
+                        log("wake: existing session confirmed healthy; no detach")
+                        await persist(); return
+                    case .waiting:
+                        if Date().timeIntervalSince(wake) < 25 {
+                            status = "Проверка существующего подключения после сна…"; return
+                        }
+                    case .failed: break
+                    }
+                } catch { log("wake session check failed") }
+            }
             // Retry only an ordinary detach. Never force-unmount, bypass the
             // filesystem flush, replay a write, or mount over the old session.
             if await disconnect(manual: false, timeout: 15) {
